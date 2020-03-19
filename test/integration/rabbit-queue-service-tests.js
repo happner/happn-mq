@@ -14,26 +14,16 @@ describe('rabbit-queue-tests', async () => {
         }
 
         this.__queueService = RabbitQueueService.create(this.__config);
+        await this.__queueService.initialize();
     });
 
     after('stop', async () => {
         await this.__queueService.stop();
     });
 
-    it('successfully creates a channel', async () => {
-
-        try {
-            await this.__queueService.initialize();
-        } catch (err) {
-            console.log(err)
-            throw err;
-        }
-    });
-
     it('successfully starts a queue', async () => {
 
         try {
-            await this.__queueService.initialize();
             await this.__queueService.startQueue(this.__queueName);
         } catch (err) {
             console.log(err)
@@ -43,26 +33,20 @@ describe('rabbit-queue-tests', async () => {
 
     it('successfully adds and pops an item on a queue', (done) => {
 
-        let emitter = new (require('events')).EventEmitter();
-
         let testMessage = JSON.stringify({ name: 'Widget' });
         // let testMessage = { name: 'Widget' };
-
-        emitter.on('messageHandled', (msg) => {
-            console.log(msg);
-            expect(msg).to.equal(testMessage);
-            done();
-        })
 
         //create a queue handler
         let handler = (channel, msg) => {
             result = msg.content.toString();
             channel.ack(msg);
-            emitter.emit('messageHandled', result);
+
+            console.log(result);
+            expect(result).to.equal(testMessage);
+            done();
         }
 
         let setup = async () => {
-            await this.__queueService.initialize();
             await this.__queueService.startQueue(this.__queueName);
             await this.__queueService.setHandler(this.__queueName, handler);
 

@@ -1,0 +1,32 @@
+{
+    "session": {
+        "id": "7c1fea4f-1f14-40f1-a39b-00f469a03d00",
+        "protocol": "happn_4",
+        "happn": {
+            "name": "voidferret_XRzXb8ejo",
+            "secure": false,
+            "encryptPayloads": false,
+            "publicKey": "AhEPwvOAms3fADkGxyaxfcnniPFilxeHjqVXlcq1aqz9"
+        }
+    },
+    "id": 1,
+    "request": {
+        "action": "configure-session",
+        "eventId": 1,
+        "data": {
+            "protocol": "happn_4"
+        }
+    },
+    "response": {
+        "data": null,
+        "_meta": {
+            "type": "response",
+            "status": "ok",
+            "published": false,
+            "eventId": 1,
+            "action": "configure-session"
+        },
+        "protocol": "happn_4",
+        "__outbound": true
+    }
+}

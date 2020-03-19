@@ -1,0 +1,52 @@
+{
+    "session": {
+        "id": "7c1fea4f-1f14-40f1-a39b-00f469a03d00",
+        "protocol": "happn_4",
+        "happn": {
+            "name": "voidferret_XRzXb8ejo",
+            "secure": false,
+            "encryptPayloads": false,
+            "publicKey": "AhEPwvOAms3fADkGxyaxfcnniPFilxeHjqVXlcq1aqz9"
+        },
+        "info": {
+            "_browser": false,
+            "_local": false
+        }
+    },
+    "id": 4,
+    "request": {
+        "action": "on",
+        "eventId": 4,
+        "path": "/ALL@*",
+        "data": null,
+        "sessionId": "7c1fea4f-1f14-40f1-a39b-00f469a03d00",
+        "options": {
+            "event_type": "all",
+            "count": 0,
+            "timeout": 60000
+        },
+        "pathData": {
+            "parts": [
+                "/ALL",
+                "*"
+            ],
+            "action": "ALL"
+        },
+        "key": "*"
+    },
+    "response": {
+        "data": {
+            "id": "S-Dm_gZvTcio2OvJoQuukA-0"
+        },
+        "_meta": {
+            "status": "ok",
+            "type": "response",
+            "published": false,
+            "eventId": 4,
+            "sessionId": "7c1fea4f-1f14-40f1-a39b-00f469a03d00",
+            "action": "on"
+        },
+        "protocol": "happn_4",
+        "__outbound": true
+    }
+}
