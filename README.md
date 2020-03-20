@@ -3,8 +3,9 @@
 ## Goals of happn-mq
 
 - to port the message processing functionality in happn-3 to a queue-driven architecture
-- this will decouple the tightly bound message receive/response call stack currently found in happn-3, and replace it with a series of queues that separates request and response flows
-- this will facilitate better load balancing amongst peer devices, particularly in a cluster scenario
+- to decouple the tightly bound message receive/response call stack currently found in happn-3; ie: incoming and outgoing message flows are separated by a queue
+- to facilitate better load balancing amongst peer devices (particularly in a cluster scenario)
+- messages are persisted in the queue until 'acked' - even if nodes are terminated
 
 ## General flow of messages
 
