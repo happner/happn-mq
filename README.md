@@ -10,7 +10,7 @@
 ## General flow of messages
 
 - a boundary service/proxy will field all __incoming__ websocket requests from happn clients
-- a session is immediately created (*if required* - ie: the message action is 'configure-session') 
+- a session is immediately created (*if required* - ie: the message action is *'configure-session'*) 
 - the message is then immediately placed on a general __incoming__ AMQP message queue (RabbitMQ/AmazonMQ) - this decouples message receiving from message processing, and reduces backpressure on clients
 - a __router__ service is bound as a queue handler to this incoming queue, which pops messages in a sequential fashion. This is important to note, as queue draining will remain blocked (if there are no other handlers bound to it) until an *ack* is called
 - __authorization__ of the message is immediately processed via a __securityService__
