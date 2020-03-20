@@ -1,5 +1,7 @@
 # happn-mq
 
+(NOTE: the repo and readme are both a work in-progress)
+
 ## Goals of happn-mq
 
 - to port the message processing functionality in happn-3 to a queue-driven architecture
