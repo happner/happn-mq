@@ -43,13 +43,23 @@ module.exports = class Core {
 
         };
 
+        this.__logger = {
+            info: (msg, obj) => { console.log(msg, obj); },
+            warn: (msg, obj) => { console.warn(msg, obj); },
+            debug: (msg, obj) => {
+                if (!obj) console.debug(msg);
+                else console.debug(msg, obj)
+            },
+            error: (msg, err) => { console.error(msg, err); }
+        }
+
         // these dependencies will be handled by DI
         let queueProvider = QueueServiceProvider.create(this.__config.happnMq);
         this.__queueService = queueProvider.getQueueService();
         this.__securityService = SecurityService.create();
         this.__dataService = DataService.create();
         this.__actionServiceFactory = ActionServiceFactory.create(this.__securityService, this.__queueService, this.__dataService);
-        this.__routerService = RouterService.create(this.__config.happnMq, this.__queueService, this.__securityService, this.__actionServiceFactory);
+        this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
     }
 
     static create() {
