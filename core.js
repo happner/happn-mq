@@ -54,7 +54,7 @@ module.exports = class Core {
         }
 
         // these dependencies will be handled by DI
-        let queueProvider = QueueServiceProvider.create(this.__config.happnMq);
+        let queueProvider = QueueServiceProvider.create(this.__config.happnMq, this.__logger);
         this.__queueService = queueProvider.getQueueService();
         this.__securityService = SecurityService.create();
         this.__dataService = DataService.create();
