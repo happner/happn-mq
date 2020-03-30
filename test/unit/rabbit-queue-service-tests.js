@@ -23,9 +23,9 @@ describe('rabbit-queue-service-tests', function () {
                 host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
                 userName: process.env['RABBITMQ_USERNAME'],
                 password: process.env['RABBITMQ_PASSWORD'],
-                maxReconnectDelay: 120000,
+                maxReconnectDelay: 10000,
                 maxReconnectRetries: 4,
-                reconnectDelayAfter: 2000
+                reconnectDelayAfter: 1000
             },
         };
 
@@ -48,9 +48,23 @@ describe('rabbit-queue-service-tests', function () {
         const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
         await queueService.initialize();
 
-        // expectations
-        expect(mockAmqpClient.connectCount).to.equal(1);
-        expect(mockAmqpClient.createChannelCount).to.equal(1);
+        let wait = () => {
+            return new Promise((resolve, reject) => {
+                // wait 1s for event propagation
+                setTimeout(async () => {
+
+                    // expectations
+                    expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(0);   // no error events
+                    expect(mockAmqpClient.counter.connectCount).to.equal(1);
+                    expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(0);  // no error events
+                    expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+
+                    resolve();
+                }, 1000);
+            })
+        }
+
+        await wait();
     });
 
     it('successfully starts a queue', async () => {
@@ -62,14 +76,26 @@ describe('rabbit-queue-service-tests', function () {
         await queueService.initialize();
         await queueService.startQueue('TEST_QUEUE');
 
-        // expectations
-        expect(mockAmqpClient.connectCount).to.equal(1);
-        expect(mockAmqpClient.createChannelCount).to.equal(1);
-        expect(mockAmqpClient.assertQueueCount).to.equal(1);
-        expect(mockAmqpClient.prefetchCount).to.equal(1);
+        let wait = () => {
+            return new Promise((resolve, reject) => {
+                // wait 1s for event propagation
+                setTimeout(async () => {
+
+                    // expectations
+                    expect(mockAmqpClient.counter.connectCount).to.equal(1);
+                    expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
+                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+
+                    resolve();
+                }, 1000);
+            })
+        }
+
+        await wait();
     });
 
-    it('successfully reconnects when connection closed', async () => {
+    it('successfully reconnects when connection closed event raised', async () => {
 
         const mockAmqpClient = createMockAmqpClient();
 
@@ -78,43 +104,85 @@ describe('rabbit-queue-service-tests', function () {
         await queueService.initialize();
         await queueService.startQueue('TEST_QUEUE');
 
-        // directly invoke the connection closed handler
-        await queueService.__connectionCloseHandler();
+        // raise a closed event on the mock rabbit connection
+        mockAmqpClient.connection.raiseEvent('close');
 
-        // expectations
-        expect(mockAmqpClient.connectCount).to.equal(2);
-        expect(mockAmqpClient.createChannelCount).to.equal(2);
-        expect(mockAmqpClient.assertQueueCount).to.equal(1);
-        expect(mockAmqpClient.prefetchCount).to.equal(1);
+        let wait = () => {
+            return new Promise((resolve, reject) => {
+                // wait 1s for event propagation
+                setTimeout(async () => {
+                    // expectations
+                    expect(mockAmqpClient.counter.connectCount).to.equal(2);    // initial connection + reconnect
+                    expect(mockAmqpClient.counter.connectionCloseEventCount).to.equal(1);   // single closed event
+                    expect(mockAmqpClient.counter.createChannelCount).to.equal(2);  // initial channel creation + recreate
+                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
+                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+
+                    resolve();
+                }, 2000);
+            })
+        }
+
+        await wait();
+
     });
 
-    it('attempts reconnection when a connection error is encountered', async () => {
+    it('reconnects when a connection error event is raised', async () => {
 
-        const mockAmqpClient = createMockAmqpClient(true);
+        const mockAmqpClient = createMockAmqpClient();
 
         // system under test
         const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
         await queueService.initialize();
 
-        // expectations - will retry the connection 4 times after initial attempt (ie: 5) - based on config setting
-        expect(mockAmqpClient.connectCount).to.equal(5);
-        expect(mockAmqpClient.createChannelCount).to.equal(0);
+        // raise a connection closed event
+        mockAmqpClient.connection.raiseEvent('error', new Error('AMQPConnection closing'));
+
+        let wait = () => {
+            return new Promise((resolve, reject) => {
+                // wait 2s for event propagation
+                setTimeout(async () => {
+                    // expectations
+                    expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(1);
+                    expect(mockAmqpClient.counter.connectCount).to.equal(2);
+                    expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(0);
+                    expect(mockAmqpClient.counter.createChannelCount).to.equal(2);
+
+                    resolve();
+                }, 2000);
+            })
+        }
+
+        await wait();
     });
 
-    it('throws error when unable to create a channel', async () => {
+    it('channel error logged', async () => {
 
-        const mockAmqpClient = createMockAmqpClient(false, true);
+        const mockAmqpClient = createMockAmqpClient();
 
         // system under test
         const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        await queueService.initialize();
 
-        try {
-            await queueService.initialize();
-        } catch (err) {
-            expect(mockAmqpClient.connectCount).to.equal(1);
-            expect(mockAmqpClient.createChannelCount).to.equal(1);
-            expect(err.message.indexOf('Channel error forcibly thrown!') > -1);
+        // raise a channel error event
+        mockAmqpClient.channel.raiseEvent('error', new Error('Forced channel error!'));
+
+        let wait = () => {
+            return new Promise((resolve, reject) => {
+                // wait 2s for event propagation
+                setTimeout(async () => {
+                    // expectations
+                    expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(0);
+                    expect(mockAmqpClient.counter.connectCount).to.equal(1);
+                    expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(1);
+                    expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+
+                    resolve();
+                }, 2000);
+            })
         }
+
+        await wait();
 
     });
 
@@ -127,58 +195,109 @@ describe('rabbit-queue-service-tests', function () {
         await queueService.initialize();
         await queueService.stop();
 
-        expect(mockAmqpClient.connectCount).to.equal(1);
-        expect(mockAmqpClient.createChannelCount).to.equal(1);
-        expect(mockAmqpClient.connectionClosedCount).to.equal(1);
-        expect(mockAmqpClient.channelClosedCount).to.equal(1);
+        expect(mockAmqpClient.counter.connectCount).to.equal(1);
+        expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+        expect(mockAmqpClient.counter.connectionClosedCount).to.equal(1);
+        expect(mockAmqpClient.counter.channelClosedCount).to.equal(1);
+
+    });
+
+    it('connection error is handled by event handler', async () => {
+
+        const mockAmqpClient = createMockAmqpClient();
+
+        // system under test
+        const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        await queueService.initialize();
+        // await queueService.stop();
+
+        mockAmqpClient.connection.raiseEvent('error', new Error('Forced error event!'));
+        // expect(mockAmqpClient.connectCount).to.equal(1);
+        // expect(mockAmqpClient.createChannelCount).to.equal(1);
+        // expect(mockAmqpClient.connectionClosedCount).to.equal(1);
+        // expect(mockAmqpClient.channelClosedCount).to.equal(1);
 
     });
 
     /*
      HELPERS
      */
-    function createMockAmqpClient(throwsConnectionError, throwsChannelError) {
+    function createMockAmqpClient() {
+
+        const Events = require('events');
+
+        let connectionEmitter = new Events.EventEmitter();
+        let channelEmitter = new Events.EventEmitter();
+
+        let counter = {
+            connectCount: 0,
+            connectionClosedCount: 0,
+            connectionCloseEventCount: 0,
+            connectionErrorEventCount: 0,
+            createChannelCount: 0,
+            channelClosedCount: 0,
+            channelCloseEventCount: 0,
+            channelErrorEventCount: 0,
+            assertQueueCount: 0,
+            prefetchCount: 0
+        }
+
+        let channel = {
+            eventEmitter: channelEmitter,
+            raiseEvent: (type, msg) => {
+                channel.eventEmitter.emit(type, msg);
+
+                if (type == 'error')
+                    counter.channelErrorEventCount += 1;
+
+                if (type == 'close')
+                    counter.channelCloseEventCount += 1;
+            },
+            on: (type, func) => {
+                channel.eventEmitter.on(type, func);
+            },
+            close: () => {
+                counter.channelClosedCount += 1;
+            },
+            assertQueue: () => {
+                counter.assertQueueCount += 1;
+            },
+            prefetch: () => {
+                counter.prefetchCount += 1;
+            }
+        };
+
+        let connection = {
+            eventEmitter: connectionEmitter,
+            raiseEvent: (type, msg) => {
+                connection.eventEmitter.emit(type, msg);
+
+                if (type == 'error')
+                    counter.connectionErrorEventCount += 1;
+
+                if (type == 'close')
+                    counter.connectionCloseEventCount += 1;
+            },
+            on: (type, func) => {
+                connection.eventEmitter.on(type, func);
+            },
+            close: () => {
+                counter.connectionClosedCount += 1;
+            },
+            createChannel: async () => {
+                counter.createChannelCount += 1;
+                return channel;
+            }
+        };
 
         const result = {
             connect: async () => {
-
-                result.connectCount += 1;
-
-                if (throwsConnectionError)
-                    throw new Error('Connection error forcibly thrown!');
-
-                return {
-                    on: () => { },
-                    close: () => {
-                        result.connectionClosedCount += 1;
-                    },
-                    createChannel: async () => {
-                        result.createChannelCount += 1;
-
-                        if (throwsChannelError)
-                            throw new Error('Channel error forcibly thrown!');
-
-                        return {
-                            on: (type, func) => { console.log(`Invoking ${type} event handler`); func(arguments) },
-                            close: () => {
-                                result.channelClosedCount += 1;
-                            },
-                            assertQueue: () => {
-                                result.assertQueueCount += 1;
-                            },
-                            prefetch: () => {
-                                result.prefetchCount += 1;
-                            }
-                        }
-                    }
-                }
+                counter.connectCount += 1;
+                return connection;
             },
-            connectCount: 0,
-            connectionClosedCount: 0,
-            createChannelCount: 0,
-            channelClosedCount: 0,
-            assertQueueCount: 0,
-            prefetchCount: 0
+            counter: counter,
+            connection: connection,
+            channel: channel
         }
 
         return result;
