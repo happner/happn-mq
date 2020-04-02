@@ -17,7 +17,7 @@ describe('router-service-tests', async () => {
             info: (msg, obj) => { if (!obj) console.info(msg); else console.info(msg, obj); },
             warn: (msg, obj) => { if (!obj) console.warn(msg); else console.warn(msg, obj); },
             debug: (msg, obj) => { if (!obj) console.debug(msg); else console.debug(msg, obj) },
-            error: (msg, err) => { console.error(msg, err); }
+            error: (msg, err) => { if (!err) console.error(msg); else console.error(msg, err) }
         }
     });
 

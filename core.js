@@ -20,7 +20,7 @@ module.exports = class Core {
                     { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
                     { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
                 ],
-                queueProvider: 'rabbitmq',  // to be interchangeable with other implementations
+                queueProvider: 'memory',  // to be interchangeable with other implementations, eg: rabbitmq, memory
                 host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
                 userName: process.env['RABBITMQ_USERNAME'],
                 password: process.env['RABBITMQ_PASSWORD']
@@ -44,13 +44,10 @@ module.exports = class Core {
         };
 
         this.__logger = {
-            info: (msg, obj) => { console.log(msg, obj); },
-            warn: (msg, obj) => { console.warn(msg, obj); },
-            debug: (msg, obj) => {
-                if (!obj) console.debug(msg);
-                else console.debug(msg, obj)
-            },
-            error: (msg, err) => { console.error(msg, err); }
+            info: (msg, obj) => { if (!obj) console.info(msg); else console.info(msg, obj); },
+            warn: (msg, obj) => { if (!obj) console.warn(msg); else console.warn(msg, obj); },
+            debug: (msg, obj) => { if (!obj) console.debug(msg); else console.debug(msg, obj) },
+            error: (msg, err) => { if (!err) console.error(msg); else console.error(msg, err) }
         }
 
         // these dependencies will be handled by DI
