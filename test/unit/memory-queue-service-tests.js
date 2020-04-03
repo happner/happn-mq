@@ -40,75 +40,79 @@ describe('memory-queue-service-tests', function () {
     after('stop', async () => {
     });
 
-    it('successfully starts a queue', () => {
+    it('successfully add items to a queue and subsequently acknowledge them', () => {
 
-        let testMsg1 = { testId: '1' };
-        let testMsg2 = { testId: '2' };
-        let testMsg3 = { testId: '3' };
-        let testMsg4 = { testId: '4' };
+        return new Promise((resolve, reject) => {
 
-        let handler = async (channel, queueItem) => {
+            let testMsg1 = { testId: '1' };
+            let testMsg2 = { testId: '2' };
+            let testMsg3 = { testId: '3' };
+            let testMsg4 = { testId: '4' };
 
-            console.log('CHANNEL: ', channel);
+            let msgCount = 0;
 
-            setTimeout(() => {
-                console.log('ACKING QUEUE ITEM: ', queueItem);
-                channel.ack(queueItem);
+            let testQueue = 'TEST_QUEUE';
 
-                let content = queueItem.content;
+            // the service will raise events of its own to indicate an ack - useful for tests
+            let msgAckedHandler = (eventObj) => {
+                msgCount += 1;
 
-                if (content.testId == '1') {
-                    expect(channel.items.length).to.equal(3);
-                    expect(channel.items[0].content).to.equal(testMsg4);
-                    expect(channel.items[1].content).to.equal(testMsg3);
-                    expect(channel.items[2].content).to.equal(testMsg2);
-                }
+                // the ack events should have been received in order - these will therefore match the ids
+                expect(eventObj.content.testId).to.equal(msgCount.toString());
 
-                if (content.testId == '4') {
-                    expect(channel.items.length).to.equal(0);
-                }
+                if (msgCount == 4)
+                    resolve();
+            };
 
+            let setup = async () => {
 
-            }, 1000)
+                // the test message handler to bind to the queue service - this will wait 1 second after the message is popped and then ack it...
+                let handler = async (channel, queueItem) => {
+                    setTimeout(() => {
+                        console.log('ACKING QUEUE ITEM: ', queueItem);
+                        channel.ack(queueItem);
+                    }, 1000)
+                };
 
-        };
+                // system under test
+                let queueService = QueueService.create(this.__config.happnMq, this.__logger);
+                await queueService.initialize();
+                await queueService.startQueue(testQueue);
+                await queueService.setHandler(testQueue, handler);
+                queueService.on('msgAcked', msgAckedHandler);
 
-        let wait = async () => {
+                // initial assertions
+                let newQueue = queueService.getQueue(testQueue);
 
-            // system under test
-            const queueService = QueueService.create(this.__config.happnMq, this.__logger);
-            await queueService.initialize();
-            await queueService.startQueue('TEST_QUEUE');
+                await queueService.add(testQueue, testMsg1);
+                expect(newQueue.items.length).to.equal(1);
+                expect(newQueue.items[0].content).to.equal(testMsg1);
 
-            let newQueue = queueService.getQueue('TEST_QUEUE');
+                await queueService.add(testQueue, testMsg2);
+                expect(newQueue.items.length).to.equal(2);
+                expect(newQueue.items[0].content).to.equal(testMsg2);
+                expect(newQueue.items[1].content).to.equal(testMsg1);
 
-            await queueService.setHandler('TEST_QUEUE', handler);
+                await queueService.add(testQueue, testMsg3);
+                expect(newQueue.items.length).to.equal(3);
+                expect(newQueue.items[0].content).to.equal(testMsg3);
+                expect(newQueue.items[1].content).to.equal(testMsg2);
+                expect(newQueue.items[2].content).to.equal(testMsg1);
 
-            await queueService.add('TEST_QUEUE', testMsg1);
-            expect(newQueue.items.length).to.equal(1);
-            expect(newQueue.items[0].content).to.equal(testMsg1);
+                await queueService.add(testQueue, testMsg4);
+                expect(newQueue.items.length).to.equal(4);
+                expect(newQueue.items[0].content).to.equal(testMsg4);
+                expect(newQueue.items[1].content).to.equal(testMsg3);
+                expect(newQueue.items[2].content).to.equal(testMsg2);
+                expect(newQueue.items[3].content).to.equal(testMsg1);
+            }
 
-            await queueService.add('TEST_QUEUE', testMsg2);
-            expect(newQueue.items.length).to.equal(2);
-            expect(newQueue.items[0].content).to.equal(testMsg2);
-            expect(newQueue.items[1].content).to.equal(testMsg1);
-
-            await queueService.add('TEST_QUEUE', testMsg3);
-            expect(newQueue.items.length).to.equal(3);
-            expect(newQueue.items[0].content).to.equal(testMsg3);
-            expect(newQueue.items[1].content).to.equal(testMsg2);
-            expect(newQueue.items[2].content).to.equal(testMsg1);
-
-            await queueService.add('TEST_QUEUE', testMsg4);
-            expect(newQueue.items.length).to.equal(4);
-            expect(newQueue.items[0].content).to.equal(testMsg4);
-            expect(newQueue.items[1].content).to.equal(testMsg3);
-            expect(newQueue.items[2].content).to.equal(testMsg2);
-            expect(newQueue.items[3].content).to.equal(testMsg1);
-        }
-
-        wait();
-
+            setup()
+                .then(() => { })
+                .catch(err => {
+                    return reject(err);
+                });
+        });
     });
 
 })
