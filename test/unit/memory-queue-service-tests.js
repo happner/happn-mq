@@ -11,24 +11,6 @@ describe('memory-queue-service-tests', function () {
 
         this.__mocker = new Mocker();
 
-        this.__config = {
-            happnMq: {
-                queues: [
-                    { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
-                    { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
-                    { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
-                    { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
-                ],
-                queueProvider: 'rabbitmq',  // to be interchangeable with other implementations
-                host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
-                userName: process.env['RABBITMQ_USERNAME'],
-                password: process.env['RABBITMQ_PASSWORD'],
-                maxReconnectDelay: 10000,
-                maxReconnectRetries: 4,
-                reconnectDelayAfter: 1000
-            },
-        };
-
         this.__logger = {
             info: (msg, obj) => { if (!obj) console.info(msg); else console.info(msg, obj); },
             warn: (msg, obj) => { if (!obj) console.warn(msg); else console.warn(msg, obj); },
@@ -75,7 +57,7 @@ describe('memory-queue-service-tests', function () {
                 };
 
                 // system under test
-                let queueService = QueueService.create(this.__config.happnMq, this.__logger);
+                let queueService = QueueService.create({}, this.__logger);
                 await queueService.initialize();
                 await queueService.startQueue(testQueue);
                 await queueService.setHandler(testQueue, handler);

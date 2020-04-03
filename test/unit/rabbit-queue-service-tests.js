@@ -11,23 +11,23 @@ describe('rabbit-queue-service-tests', function () {
 
         this.__mocker = new Mocker();
 
-        this.__config = {
-            happnMq: {
-                queues: [
-                    { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
-                    { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
-                    { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
-                    { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
-                ],
-                queueProvider: 'rabbitmq',  // to be interchangeable with other implementations
-                host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
-                userName: process.env['RABBITMQ_USERNAME'],
-                password: process.env['RABBITMQ_PASSWORD'],
-                maxReconnectDelay: 10000,
-                maxReconnectRetries: 4,
-                reconnectDelayAfter: 1000
-            },
-        };
+        // this.__config = {
+        //     happnMq: {
+        //         queues: [
+        //             { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
+        //             { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
+        //             { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
+        //             { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
+        //         ],
+        //         queueProvider: 'rabbitmq',  // to be interchangeable with other implementations
+        //         host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
+        //         userName: process.env['RABBITMQ_USERNAME'],
+        //         password: process.env['RABBITMQ_PASSWORD'],
+        //         maxReconnectDelay: 10000,
+        //         maxReconnectRetries: 4,
+        //         reconnectDelayAfter: 1000
+        //     },
+        // };
 
         this.__logger = {
             info: (msg, obj) => { if (!obj) console.info(msg); else console.info(msg, obj); },
@@ -45,7 +45,7 @@ describe('rabbit-queue-service-tests', function () {
         const mockAmqpClient = createMockAmqpClient();
 
         // system under test
-        const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
         await queueService.initialize();
 
         let wait = () => {
@@ -72,7 +72,7 @@ describe('rabbit-queue-service-tests', function () {
         const mockAmqpClient = createMockAmqpClient();
 
         // system under test
-        const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
         await queueService.initialize();
         await queueService.startQueue('TEST_QUEUE');
 
@@ -100,7 +100,7 @@ describe('rabbit-queue-service-tests', function () {
         const mockAmqpClient = createMockAmqpClient();
 
         // system under test
-        const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
         await queueService.initialize();
         await queueService.startQueue('TEST_QUEUE');
 
@@ -132,7 +132,7 @@ describe('rabbit-queue-service-tests', function () {
         const mockAmqpClient = createMockAmqpClient();
 
         // system under test
-        const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
         await queueService.initialize();
 
         // raise a connection closed event
@@ -161,7 +161,7 @@ describe('rabbit-queue-service-tests', function () {
         const mockAmqpClient = createMockAmqpClient();
 
         // system under test
-        const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
         await queueService.initialize();
 
         // raise a channel error event
@@ -191,7 +191,7 @@ describe('rabbit-queue-service-tests', function () {
         const mockAmqpClient = createMockAmqpClient();
 
         // system under test
-        const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
         await queueService.initialize();
         await queueService.stop();
 
@@ -207,7 +207,7 @@ describe('rabbit-queue-service-tests', function () {
         const mockAmqpClient = createMockAmqpClient();
 
         // system under test
-        const queueService = QueueService.create(this.__config.happnMq, this.__logger, mockAmqpClient);
+        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
         await queueService.initialize();
         // await queueService.stop();
 
