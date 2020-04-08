@@ -20,27 +20,11 @@ module.exports = class Core {
                     { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
                     { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
                 ],
-                queueProvider: 'memory',  // to be interchangeable with other implementations, eg: rabbitmq, memory
+                queueProvider: 'rabbitmq',  // to be interchangeable with other implementations, eg: rabbitmq, memory
                 host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
                 userName: process.env['RABBITMQ_USERNAME'],
                 password: process.env['RABBITMQ_PASSWORD']
-            },
-            // components: {
-            //     testComponent: {
-            //         name: 'testComponent',
-            //         moduleName: 'testComponent',
-            //         startMethod: 'start',
-            //         schema: {
-            //             exclusive: false,
-            //             methods: {
-            //                 start: {
-            //                     type: 'async'
-            //                 }
-            //             }
-            //         }
-            //     }, 
-            // }
-
+            }
         };
 
         this.__logger = {
@@ -55,7 +39,7 @@ module.exports = class Core {
         this.__queueService = queueProvider.getQueueService();
         this.__securityService = SecurityService.create();
         this.__dataService = DataService.create();
-        this.__actionServiceFactory = ActionServiceFactory.create(this.__securityService, this.__queueService, this.__dataService);
+        this.__actionServiceFactory = ActionServiceFactory.create(this.__logger, this.__securityService, this.__queueService, this.__dataService);
         this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
     }
 
@@ -65,23 +49,14 @@ module.exports = class Core {
 
     async initialize() {
 
-        console.log('Initializing core.....');
+        this.__logger.info('Initializing core.....');
 
         // set up the queue service
         await this.__queueService.initialize();
 
-        // dynamically create the component queues based on the happner config (1 queue per component)
-        // for (let property in this.__config.components) {
-        //     if (this.__config.components.hasOwnProperty(property)) {
-        //         let queueName = this.__config.components[property].name;
-        //         this.__config.happnMq.queues.push({ name: `${queueName.toUpperCase()}_IN` })
-        //         this.__config.happnMq.queues.push({ name: `${queueName.toUpperCase()}_OUT` })
-        //     }
-        // }
-
         // start the queues
         for (let queue of this.__config.happnMq.queues) {
-            await this.__queueService.startQueue(queue.name);
+            this.__queueService.startQueue(queue.name);
         };
 
         // set up the router service

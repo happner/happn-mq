@@ -41,6 +41,7 @@ describe('memory-queue-service-tests', function () {
 
                 // the ack events should have been received in order - these will therefore match the ids
                 expect(eventObj.content.testId).to.equal(msgCount.toString());
+                expect(eventObj.status).to.equal('acked');
 
                 if (msgCount == 4)
                     resolve();
@@ -51,7 +52,7 @@ describe('memory-queue-service-tests', function () {
                 // the test message handler to bind to the queue service - this will wait 1 second after the message is popped and then ack it...
                 let handler = async (channel, queueItem) => {
                     setTimeout(() => {
-                        console.log('ACKING QUEUE ITEM: ', queueItem);
+                        expect(queueItem.status).to.equal('processing');
                         channel.ack(queueItem);
                     }, 1000)
                 };
@@ -69,17 +70,23 @@ describe('memory-queue-service-tests', function () {
                 await queueService.add(testQueue, testMsg1);
                 expect(newQueue.items.length).to.equal(1);
                 expect(newQueue.items[0].content).to.equal(testMsg1);
+                expect(newQueue.items[0].status).to.equal('processing');
 
                 await queueService.add(testQueue, testMsg2);
                 expect(newQueue.items.length).to.equal(2);
                 expect(newQueue.items[0].content).to.equal(testMsg2);
                 expect(newQueue.items[1].content).to.equal(testMsg1);
+                expect(newQueue.items[0].status).to.equal('new');
+                expect(newQueue.items[1].status).to.equal('processing');
 
                 await queueService.add(testQueue, testMsg3);
                 expect(newQueue.items.length).to.equal(3);
                 expect(newQueue.items[0].content).to.equal(testMsg3);
                 expect(newQueue.items[1].content).to.equal(testMsg2);
                 expect(newQueue.items[2].content).to.equal(testMsg1);
+                expect(newQueue.items[0].status).to.equal('new');
+                expect(newQueue.items[1].status).to.equal('new');
+                expect(newQueue.items[2].status).to.equal('processing');
 
                 await queueService.add(testQueue, testMsg4);
                 expect(newQueue.items.length).to.equal(4);
@@ -87,6 +94,10 @@ describe('memory-queue-service-tests', function () {
                 expect(newQueue.items[1].content).to.equal(testMsg3);
                 expect(newQueue.items[2].content).to.equal(testMsg2);
                 expect(newQueue.items[3].content).to.equal(testMsg1);
+                expect(newQueue.items[0].status).to.equal('new');
+                expect(newQueue.items[1].status).to.equal('new');
+                expect(newQueue.items[2].status).to.equal('new');
+                expect(newQueue.items[3].status).to.equal('processing');
             }
 
             setup()
