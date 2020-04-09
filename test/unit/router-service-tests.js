@@ -56,7 +56,7 @@ describe('router-service-tests', async () => {
             .create();
 
         const mockChannel = { ack: () => { console.log('acked!'); mockChannel.ackCount += 1; }, ackCount: 0 };
-        const mockMsg = { content: '{ "raw": { "action": "testAction" } }' };
+        const mockMsg = { content: { raw: { action: "testAction" } } };
 
         // system under test
         const routerService = RouterService.create(this.__config, this.__logger, mockQueueService, mockSecurityService, mockActionServiceFactory);
@@ -109,7 +109,7 @@ describe('router-service-tests', async () => {
             .create();
 
         const mockChannel = { ack: () => { console.log('acked!'); mockChannel.ackCount += 1; }, ackCount: 0 };
-        const mockMsg = { content: '{ "raw": { "action": "testAction" } }' };
+        const mockMsg = { content: { raw: { action: "testAction" } } };
 
         // system under test
         const routerService = RouterService.create(this.__config, this.__logger, mockQueueService, mockSecurityService, null);

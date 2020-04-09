@@ -40,186 +40,240 @@ describe('rabbit-queue-service-tests', function () {
     after('stop', async () => {
     });
 
-    it('successfully initializes rabbit queue service', async () => {
+    it('successfully initializes rabbit queue service', () => {
 
-        const mockAmqpClient = createMockAmqpClient();
+        return new Promise((resolve, reject) => {
 
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
 
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 1s for event propagation
-                setTimeout(async () => {
+            // system under test
+            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
 
-                    // expectations
-                    expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(0);   // no error events
-                    expect(mockAmqpClient.counter.connectCount).to.equal(1);
-                    expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(0);  // no error events
-                    expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+            let startedHandler = () => {
 
-                    await queueService.stop();
+                // expectations
+                expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(0);   // no error events
+                expect(mockAmqpClient.counter.connectCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(0);  // no error events
+                expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
 
-                    resolve();
-                }, 1000);
-            })
-        }
+                queueService.stop();
 
-        await wait();
+                resolve();
+            }
+
+            let setup = async () => {
+                queueService.on('serviceStarted', startedHandler);
+                await queueService.initialize();
+            }
+
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+        });
     });
 
-    it('successfully starts a queue', async () => {
+    it('successfully starts a queue', () => {
 
-        const mockAmqpClient = createMockAmqpClient();
+        return new Promise((resolve, reject) => {
 
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
-        await queueService.startQueue('TEST_QUEUE');
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
 
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 1s for event propagation
-                setTimeout(async () => {
+            // system under test
+            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
 
-                    // expectations
-                    expect(mockAmqpClient.counter.connectCount).to.equal(1);
-                    expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
-                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+            let startedHandler = () => {
 
-                    resolve();
-                }, 1000);
-            })
-        }
+                // expectations
+                expect(mockAmqpClient.counter.connectCount).to.equal(1);
+                expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+                expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
 
-        await wait();
+                queueService.stop();
+
+                resolve();
+            }
+
+            let setup = async () => {
+                queueService.on('queueStarted', startedHandler);
+                await queueService.initialize();
+                await queueService.startQueue('TEST_QUEUE');
+            }
+
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+        });
     });
 
-    it('successfully reconnects when connection closed event raised', async () => {
+    it('successfully reconnects when connection closed event raised', () => {
 
-        const mockAmqpClient = createMockAmqpClient();
+        return new Promise((resolve, reject) => {
 
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
-        await queueService.startQueue('TEST_QUEUE');
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
 
-        // raise a closed event on the mock rabbit connection
-        mockAmqpClient.connection.raiseEvent('close');
+            // system under test
+            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
 
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 1s for event propagation
-                setTimeout(async () => {
-                    // expectations
-                    expect(mockAmqpClient.counter.connectCount).to.equal(2);    // initial connection + reconnect
-                    expect(mockAmqpClient.counter.connectionCloseEventCount).to.equal(1);   // single closed event
-                    expect(mockAmqpClient.counter.createChannelCount).to.equal(2);  // initial channel creation + recreate
-                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+            let closedHandler = () => {
 
-                    resolve();
-                }, 2000);
-            })
-        }
+                expect(mockAmqpClient.counter.connectCount).to.equal(2);    // initial connection + reconnect
+                expect(mockAmqpClient.counter.connectionCloseEventCount).to.equal(1);   // single closed event
+                expect(mockAmqpClient.counter.createChannelCount).to.equal(2);  // initial channel creation + recreate
+                expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
 
-        await wait();
+                queueService.stop();
 
-    });
+                resolve();
+            }
 
-    it('processes a single reconnection at a time', async () => {
+            let setup = async () => {
 
-        const mockAmqpClient = createMockAmqpClient();
+                queueService.on('connectionClosed', closedHandler);
+                await queueService.initialize();
+                await queueService.startQueue('TEST_QUEUE');
 
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
-        await queueService.startQueue('TEST_QUEUE');
+                // raise a closed event on the mock rabbit connection
+                mockAmqpClient.connection.raiseEvent('close');
+            }
 
-        // raise 2 closed events on the mock rabbit connection
-        mockAmqpClient.connection.raiseEvent('close');
-        mockAmqpClient.connection.raiseEvent('close');
-
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 1s for event propagation
-                setTimeout(async () => {
-                    // expectations
-                    console.log('EXPECTATIONS...');
-                    expect(mockAmqpClient.counter.connectCount).to.equal(2);    // initial connection + reconnect
-                    expect(mockAmqpClient.counter.connectionCloseEventCount).to.equal(2);   // 2 closed events
-                    expect(mockAmqpClient.counter.createChannelCount).to.equal(2);  // initial channel creation + recreate
-                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
-
-                    resolve();
-                }, 2000);
-            })
-        }
-
-        await wait();
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+        });
 
     });
 
-    it('reconnects when a connection error event is raised', async () => {
+    it('processes a single reconnection at a time', () => {
 
-        const mockAmqpClient = createMockAmqpClient();
+        return new Promise((resolve, reject) => {
 
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
+            let closedCount = 0;
 
-        // raise a connection closed event
-        mockAmqpClient.connection.raiseEvent('error', new Error('AMQPConnection closing'));
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
 
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 2s for event propagation
-                setTimeout(async () => {
+            // system under test
+            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
+
+            let closedHandler = () => {
+
+                closedCount++;
+
+                if (closedCount == 2) {
                     // expectations
-                    expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(1);
                     expect(mockAmqpClient.counter.connectCount).to.equal(2);
-                    expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(0);
                     expect(mockAmqpClient.counter.createChannelCount).to.equal(2);
+                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
+                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+
+                    queueService.stop();
 
                     resolve();
-                }, 2000);
-            })
-        }
+                }
+            }
 
-        await wait();
+            let setup = async () => {
+                queueService.on('connectionClosed', closedHandler);
+                await queueService.initialize();
+                await queueService.startQueue('TEST_QUEUE');
+
+                // raise 2 closed events on the mock rabbit connection
+                mockAmqpClient.connection.raiseEvent('close');
+                mockAmqpClient.connection.raiseEvent('close');
+            }
+
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+        });
+
     });
 
-    it('channel error logged', async () => {
+    it('reconnects when a connection error event is raised', () => {
 
-        const mockAmqpClient = createMockAmqpClient();
+        return new Promise((resolve, reject) => {
 
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
 
-        // raise a channel error event
-        mockAmqpClient.channel.raiseEvent('error', new Error('Forced channel error!'));
+            // system under test
+            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
 
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 2s for event propagation
-                setTimeout(async () => {
-                    // expectations
-                    expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(0);
-                    expect(mockAmqpClient.counter.connectCount).to.equal(1);
-                    expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(1);
-                    expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+            let errorHandler = () => {
 
-                    resolve();
-                }, 2000);
-            })
-        }
+                // expectations
+                expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(1);
+                expect(mockAmqpClient.counter.connectCount).to.equal(2);
+                expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(0);
+                expect(mockAmqpClient.counter.createChannelCount).to.equal(2);
 
-        await wait();
+                queueService.stop();
 
+                resolve();
+            }
+
+            let setup = async () => {
+                queueService.on('connectionError', errorHandler);
+                await queueService.initialize();
+
+                // raise a connection closed event
+                mockAmqpClient.connection.raiseEvent('error', new Error('AMQPConnection closing'));
+            }
+
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+        });
+    });
+
+    it('channel error logged', () => {
+
+        return new Promise((resolve, reject) => {
+
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
+
+            // system under test
+            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
+
+            let errorHandler = () => {
+
+                // expectations
+                expect(mockAmqpClient.counter.connectionErrorEventCount).to.equal(0);
+                expect(mockAmqpClient.counter.connectCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelErrorEventCount).to.equal(1);
+                expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+
+                queueService.stop();
+
+                resolve();
+            }
+
+            let setup = async () => {
+                queueService.on('channelError', errorHandler);
+                await queueService.initialize();
+
+                // raise a channel error event
+                mockAmqpClient.channel.raiseEvent('error', new Error('Forced channel error!'));
+            }
+
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+
+        });
     });
 
     it('stopping service successfully closes channel and connection', async () => {
@@ -238,124 +292,142 @@ describe('rabbit-queue-service-tests', function () {
 
     });
 
-    it('connection error is handled by event handler', async () => {
+    // it('connection error is handled by event handler', async () => {
 
-        const mockAmqpClient = createMockAmqpClient();
+    //     const mockAmqpClient = createMockAmqpClient();
 
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
-        // await queueService.stop();
+    //     // system under test
+    //     const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
+    //     await queueService.initialize();
+    //     // await queueService.stop();
 
-        mockAmqpClient.connection.raiseEvent('error', new Error('Forced error event!'));
-        // expect(mockAmqpClient.connectCount).to.equal(1);
-        // expect(mockAmqpClient.createChannelCount).to.equal(1);
-        // expect(mockAmqpClient.connectionClosedCount).to.equal(1);
-        // expect(mockAmqpClient.channelClosedCount).to.equal(1);
+    //     mockAmqpClient.connection.raiseEvent('error', new Error('Forced error event!'));
+    //     // expect(mockAmqpClient.connectCount).to.equal(1);
+    //     // expect(mockAmqpClient.createChannelCount).to.equal(1);
+    //     // expect(mockAmqpClient.connectionClosedCount).to.equal(1);
+    //     // expect(mockAmqpClient.channelClosedCount).to.equal(1);
+
+    // });
+
+    it('successfully adds an item to the queue', () => {
+
+        return new Promise((resolve, reject) => {
+
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
+
+            // system under test
+            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
+
+            let itemAddedHandler = () => {
+
+                // expectations
+                expect(mockAmqpClient.counter.connectCount).to.equal(1);
+                expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+                expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+                expect(mockAmqpClient.counter.sendToQueueCount).to.equal(1);
+
+                queueService.stop();
+
+                resolve();
+            }
+
+            let setup = async () => {
+                queueService.on('itemAdded', itemAddedHandler);
+                await queueService.initialize();
+                await queueService.startQueue('TEST_QUEUE');
+                queueService.add('TEST_QUEUE', { testId: '1' });
+            }
+
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+        });
+
+    });
+
+    it('successfully attempts to reconnect when queue connection is caught', () => {
+
+        return new Promise((resolve, reject) => {
+
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
+
+            // force a connection error to be thrown by the mock
+            mockAmqpClient.connect = () => {
+                mockAmqpClient.counter.connectCount += 1;
+                throw new Error('Forced connect error!')
+            };
+
+            let config = {
+                maxReconnectDelay: 10000,
+                maxReconnectRetries: 4,
+                reconnectDelayAfter: 1000
+            };
+
+            // system under test
+            const queueService = QueueService.create(config, this.__logger, mockAmqpClient);
+
+            let serviceStoppedHandler = () => {
+
+                // expectations
+                expect(mockAmqpClient.counter.connectCount).to.equal(5);
+
+                queueService.stop();
+                resolve();
+            }
+
+            let setup = async () => {
+                queueService.on('serviceStopped', serviceStoppedHandler);
+                await queueService.initialize();
+                await queueService.startQueue('TEST_QUEUE');
+            }
+
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+        });
 
     });
 
-    it('successfully adds an item to the queue', async () => {
+    it('does not attempt to stop again when stop already called', () => {
 
-        const mockAmqpClient = createMockAmqpClient();
+        return new Promise((resolve, reject) => {
 
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
-        await queueService.startQueue('TEST_QUEUE');
+            // mock rabbit client
+            const mockAmqpClient = createMockAmqpClient();
 
-        queueService.add('TEST_QUEUE', { testId: '1' });
+            // system under test
+            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
 
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 1s for event propagation
-                setTimeout(async () => {
+            let serviceStoppedHandler = () => {
 
-                    // expectations
-                    expect(mockAmqpClient.counter.connectCount).to.equal(1);
-                    expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
-                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
-                    expect(mockAmqpClient.counter.sendToQueueCount).to.equal(1);
+                // expectations
+                expect(mockAmqpClient.counter.connectCount).to.equal(1);
+                expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
+                expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelClosedCount).to.equal(1);
+                expect(mockAmqpClient.counter.connectionClosedCount).to.equal(1);
 
-                    resolve();
-                }, 1000);
-            })
-        }
+                resolve();
+            }
 
-        await wait();
+            let setup = async () => {
+                queueService.on('serviceStopped', serviceStoppedHandler);
+                await queueService.initialize();
+                await queueService.startQueue('TEST_QUEUE');
+                queueService.stop();
+            }
 
-    });
-
-    it('successfully attempts to reconnect when queue connection is caught', async () => {
-
-        const mockAmqpClient = createMockAmqpClient();
-
-        // force a connection error to be thrown
-        mockAmqpClient.connect = () => {
-            mockAmqpClient.counter.connectCount += 1;
-            throw new Error('Forced connect error!')
-        };
-
-        let config = {
-            maxReconnectDelay: 10000,
-            maxReconnectRetries: 4,
-            reconnectDelayAfter: 1000
-        };
-
-        // system under test
-        const queueService = QueueService.create(config, this.__logger, mockAmqpClient);
-        await queueService.initialize();
-
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 1s for event propagation
-                setTimeout(async () => {
-
-                    // expectations
-                    expect(mockAmqpClient.counter.connectCount).to.equal(5);
-
-                    resolve();
-                }, 5000);
-            })
-        }
-
-        await wait();
-
-    });
-   
-    it('does not attempt to stop again when stop already called', async () => {
-
-        const mockAmqpClient = createMockAmqpClient();
-
-        // system under test
-        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
-        await queueService.initialize();
-        await queueService.startQueue('TEST_QUEUE');
-
-        await queueService.stop();
-
-        let wait = () => {
-            return new Promise((resolve, reject) => {
-                // wait 1s for event propagation
-                setTimeout(async () => {
-
-                    await queueService.stop();
-
-                    // expectations
-                    expect(mockAmqpClient.counter.connectCount).to.equal(1);
-                    expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
-                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
-                    expect(mockAmqpClient.counter.channelClosedCount).to.equal(1);
-                    expect(mockAmqpClient.counter.connectionClosedCount).to.equal(1);
-
-                    resolve();
-                }, 5000);
-            })
-        }
-
-        await wait();
+            setup()
+                .catch(err => {
+                    return reject(err);
+                });
+        });
 
     });
 
@@ -386,13 +458,13 @@ describe('rabbit-queue-service-tests', function () {
         let channel = {
             eventEmitter: channelEmitter,
             raiseEvent: (type, msg) => {
-                channel.eventEmitter.emit(type, msg);
-
                 if (type == 'error')
                     counter.channelErrorEventCount += 1;
 
                 if (type == 'close')
                     counter.channelCloseEventCount += 1;
+
+                channel.eventEmitter.emit(type, msg);
             },
             on: (type, func) => {
                 channel.eventEmitter.on(type, func);
@@ -414,13 +486,13 @@ describe('rabbit-queue-service-tests', function () {
         let connection = {
             eventEmitter: connectionEmitter,
             raiseEvent: (type, msg) => {
-                connection.eventEmitter.emit(type, msg);
-
                 if (type == 'error')
                     counter.connectionErrorEventCount += 1;
 
                 if (type == 'close')
                     counter.connectionCloseEventCount += 1;
+
+                connection.eventEmitter.emit(type, msg);
             },
             on: (type, func) => {
                 connection.eventEmitter.on(type, func);
