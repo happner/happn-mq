@@ -48,7 +48,7 @@ describe('rabbit-queue-service-tests', function () {
             const mockAmqpClient = createMockAmqpClient();
 
             // system under test
-            const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
+            const queueService = QueueService.create({ userName: 'test', password: 'test' }, this.__logger, mockAmqpClient);
 
             let startedHandler = () => {
 
@@ -90,8 +90,8 @@ describe('rabbit-queue-service-tests', function () {
                 // expectations
                 expect(mockAmqpClient.counter.connectCount).to.equal(1);
                 expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
-                expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelAssertQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelPrefetchCount).to.equal(1);
 
                 queueService.stop();
 
@@ -111,6 +111,22 @@ describe('rabbit-queue-service-tests', function () {
         });
     });
 
+    it('successfully sets a queue handler', async () => {
+
+        // mock rabbit client
+        const mockAmqpClient = createMockAmqpClient();
+
+        // system under test
+        const queueService = QueueService.create({}, this.__logger, mockAmqpClient);
+
+        await queueService.initialize();
+        await queueService.startQueue('TEST_QUEUE');
+        queueService.setHandler('TEST_QUEUE', () => { });
+
+        expect(mockAmqpClient.counter.channelConsumeCount).to.equal(1);
+    });
+
+
     it('successfully reconnects when connection closed event raised', () => {
 
         return new Promise((resolve, reject) => {
@@ -126,8 +142,8 @@ describe('rabbit-queue-service-tests', function () {
                 expect(mockAmqpClient.counter.connectCount).to.equal(2);    // initial connection + reconnect
                 expect(mockAmqpClient.counter.connectionCloseEventCount).to.equal(1);   // single closed event
                 expect(mockAmqpClient.counter.createChannelCount).to.equal(2);  // initial channel creation + recreate
-                expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelAssertQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelPrefetchCount).to.equal(1);
 
                 queueService.stop();
 
@@ -172,8 +188,8 @@ describe('rabbit-queue-service-tests', function () {
                     // expectations
                     expect(mockAmqpClient.counter.connectCount).to.equal(2);
                     expect(mockAmqpClient.counter.createChannelCount).to.equal(2);
-                    expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                    expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+                    expect(mockAmqpClient.counter.channelAssertQueueCount).to.equal(1);
+                    expect(mockAmqpClient.counter.channelPrefetchCount).to.equal(1);
 
                     queueService.stop();
 
@@ -324,9 +340,9 @@ describe('rabbit-queue-service-tests', function () {
                 // expectations
                 expect(mockAmqpClient.counter.connectCount).to.equal(1);
                 expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
-                expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
-                expect(mockAmqpClient.counter.sendToQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelAssertQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelPrefetchCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelSendToQueueCount).to.equal(1);
 
                 queueService.stop();
 
@@ -408,8 +424,8 @@ describe('rabbit-queue-service-tests', function () {
                 // expectations
                 expect(mockAmqpClient.counter.connectCount).to.equal(1);
                 expect(mockAmqpClient.counter.createChannelCount).to.equal(1);
-                expect(mockAmqpClient.counter.assertQueueCount).to.equal(1);
-                expect(mockAmqpClient.counter.prefetchCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelAssertQueueCount).to.equal(1);
+                expect(mockAmqpClient.counter.channelPrefetchCount).to.equal(1);
                 expect(mockAmqpClient.counter.channelClosedCount).to.equal(1);
                 expect(mockAmqpClient.counter.connectionClosedCount).to.equal(1);
 
@@ -450,9 +466,10 @@ describe('rabbit-queue-service-tests', function () {
             channelClosedCount: 0,
             channelCloseEventCount: 0,
             channelErrorEventCount: 0,
-            assertQueueCount: 0,
-            prefetchCount: 0,
-            sendToQueueCount: 0
+            channelAssertQueueCount: 0,
+            channelPrefetchCount: 0,
+            channelSendToQueueCount: 0,
+            channelConsumeCount: 0
         }
 
         let channel = {
@@ -473,13 +490,16 @@ describe('rabbit-queue-service-tests', function () {
                 counter.channelClosedCount += 1;
             },
             assertQueue: () => {
-                counter.assertQueueCount += 1;
+                counter.channelAssertQueueCount += 1;
             },
             prefetch: () => {
-                counter.prefetchCount += 1;
+                counter.channelPrefetchCount += 1;
             },
             sendToQueue: () => {
-                counter.sendToQueueCount += 1;
+                counter.channelSendToQueueCount += 1;
+            },
+            consume: () => {
+                counter.channelConsumeCount += 1;
             }
         };
 

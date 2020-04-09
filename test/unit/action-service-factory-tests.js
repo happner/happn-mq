@@ -23,8 +23,10 @@ describe('action-service-factory-tests', async () => {
 
     it('successfully gets an action service', async () => {
 
+        let describeAction = new DescribeAction();
+
         // system under test
-        const actionServiceFactory = ActionServiceFactory.create(this.__logger, null, null, null);
+        const actionServiceFactory = ActionServiceFactory.create(this.__config, this.__logger, { describeAction });
         let actionService = actionServiceFactory.getActionService('describe');
 
         expect(actionService instanceof DescribeAction).to.equal(true);
@@ -33,7 +35,7 @@ describe('action-service-factory-tests', async () => {
     it('successfully throws an error when attempting to get an invalid action service', async () => {
 
         // system under test
-        const actionServiceFactory = ActionServiceFactory.create(this.__logger, null, null, null);
+        const actionServiceFactory = ActionServiceFactory.create(this.__config, this.__logger, {});
 
         try {
             actionServiceFactory.getActionService('abc');

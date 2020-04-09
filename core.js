@@ -35,11 +35,25 @@ module.exports = class Core {
         }
 
         // these dependencies will be handled by DI
-        let queueProvider = QueueServiceProvider.create(this.__config.happnMq, this.__logger);
-        this.__queueService = queueProvider.getQueueService();
-        this.__securityService = SecurityService.create();
-        this.__dataService = DataService.create();
-        this.__actionServiceFactory = ActionServiceFactory.create(this.__logger, this.__securityService, this.__queueService, this.__dataService);
+        this.__queueProvider = QueueServiceProvider.create(this.__config.happnMq, this.__logger);
+        this.__queueService = this.__queueProvider.getQueueService();
+        this.__securityService = SecurityService.create(this.__config.happnMq, this.__logger);
+        this.__dataService = DataService.create(this.__config.happnMq, this.__logger);
+
+        // actions
+        let describeAction = new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__queueService);
+        let loginAction = new (require(`./lib/services/actions/login`))(this.__config, this.__logger, this.__queueService, this.__securityService);
+        let getAction = new (require(`./lib/services/actions/get`))(this.__config, this.__logger, this.__queueService);
+        let offAction = new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__queueService);
+        let onAction = new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__queueService);
+        let removeAction = new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__queueService);
+        let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService);
+
+        this.__actions = {
+            describeAction, loginAction, getAction, offAction, onAction, removeAction, setAction
+        }
+
+        this.__actionServiceFactory = ActionServiceFactory.create(this.__config, this.__logger, this.__actions);
         this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
     }
 
