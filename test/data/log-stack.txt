@@ -1,0 +1,515 @@
+==================================================================================================
+
+HANDLING MESSAGE ---->  { action: 'configure-session',
+  eventId: 1,
+  data: { protocol: 'happn_4' } }
+
+0 -> INBOUND MESSAGE (WITH SESSION DETAILS):  { raw: 
+   { action: 'configure-session',
+     eventId: 1,
+     data: { protocol: 'happn_4' } },
+  session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 1 }
+1 -> TRANSFORMED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 1,
+  request: 
+   { action: 'configure-session',
+     eventId: 1,
+     data: { protocol: 'happn_4' } } }
+2 -> AUTHORIZED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 1,
+  request: 
+   { action: 'configure-session',
+     eventId: 1,
+     data: { protocol: 'happn_4' } } }
+
+==================================================================================================
+
+HANDLING MESSAGE ---->  { action: 'describe', eventId: 2, data: null }
+
+0 -> INBOUND MESSAGE (WITH SESSION DETAILS):  { raw: { action: 'describe', eventId: 2, data: null },
+  session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 2 }
+1 -> TRANSFORMED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 2,
+  request: { action: 'describe', eventId: 2, data: null } }
+2 -> AUTHORIZED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 2,
+  request: { action: 'describe', eventId: 2, data: null } }
+
+==================================================================================================
+
+HANDLING MESSAGE ---->  { action: 'login',
+  eventId: 3,
+  data: 
+   { info: { _browser: false, _local: false },
+     protocol: 'happn_4' },
+  options: { timeout: 60000 } }
+
+0 -> INBOUND MESSAGE (WITH SESSION DETAILS):  { raw: 
+   { action: 'login',
+     eventId: 3,
+     data: { info: [Object], protocol: 'happn_4' },
+     options: { timeout: 60000 } },
+  session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 3 }
+1 -> TRANSFORMED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 3,
+  request: 
+   { action: 'login',
+     eventId: 3,
+     data: { info: [Object], protocol: 'happn_4' },
+     options: { timeout: 60000 } } }
+2 -> AUTHORIZED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' } },
+  id: 3,
+  request: 
+   { action: 'login',
+     eventId: 3,
+     data: { info: [Object], protocol: 'happn_4' },
+     options: { timeout: 60000 } } }
+
+==================================================================================================
+
+HANDLING MESSAGE ---->  { action: 'on',
+  eventId: 4,
+  path: '/ALL@*',
+  data: null,
+  sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+  options: { event_type: 'all', count: 0, timeout: 60000 } }
+
+0 -> INBOUND MESSAGE (WITH SESSION DETAILS):  { raw: 
+   { action: 'on',
+     eventId: 4,
+     path: '/ALL@*',
+     data: null,
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { event_type: 'all', count: 0, timeout: 60000 } },
+  session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 4 }
+1 -> TRANSFORMED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 4,
+  request: 
+   { action: 'on',
+     eventId: 4,
+     path: '/ALL@*',
+     data: null,
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { event_type: 'all', count: 0, timeout: 60000 } } }
+2 -> AUTHORIZED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 4,
+  request: 
+   { action: 'on',
+     eventId: 4,
+     path: '/ALL@*',
+     data: null,
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { event_type: 'all', count: 0, timeout: 60000 } } }
+
+==================================================================================================
+
+HANDLING MESSAGE ---->  { action: 'set',
+  eventId: 5,
+  path: 'test1/testsubscribe/data/',
+  data: 
+   { property1: 'property1',
+     property2: 'property2',
+     property3: 'property3' },
+  sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+  options: { noPublish: false, timeout: 60000 } }
+
+0 -> INBOUND MESSAGE (WITH SESSION DETAILS):  { raw: 
+   { action: 'set',
+     eventId: 5,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property1',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000 } },
+  session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 5 }
+1 -> TRANSFORMED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 5,
+  request: 
+   { action: 'set',
+     eventId: 5,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property1',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000 } } }
+2 -> AUTHORIZED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 5,
+  request: 
+   { action: 'set',
+     eventId: 5,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property1',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000 } } }
+3 -> STORED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 5,
+  request: 
+   { action: 'set',
+     eventId: 5,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property1',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000, upsert: true } },
+  response: 
+   { data: 
+      { property1: 'property1',
+        property2: 'property2',
+        property3: 'property3' },
+     _meta: 
+      { created: 1586851786786,
+        modified: 1586851786786,
+        path: 'test1/testsubscribe/data/',
+        _id: 'test1/testsubscribe/data/' } } }
+4 -> PUBLISHED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 5,
+  request: 
+   { action: 'set',
+     eventId: 5,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property1',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000, upsert: true, consistency: 2 } },
+  response: 
+   { data: 
+      { property1: 'property1',
+        property2: 'property2',
+        property3: 'property3' },
+     _meta: 
+      { created: 1586851786786,
+        modified: 1586851786786,
+        path: 'test1/testsubscribe/data/',
+        _id: 'test1/testsubscribe/data/',
+        published: true } },
+  publication: { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a-5' } }
+
+==================================================================================================
+
+CLIENT RESULTS:
+---------------
+
+EVENT MESSAGE:  { property1: 'property1',
+  property2: 'property2',
+  property3: 'property3' } { action: '/SET@test1/testsubscribe/data/',
+  type: 'data',
+  sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+  consistency: 2,
+  publicationId: '280d4337-bcbe-4e64-898d-c8236ef34d4a-5',
+  path: 'test1/testsubscribe/data/',
+  created: 1586851786786,
+  modified: 1586851786786,
+  channel: '/ALL@*' }
+
+:::::>>> RESULT 1:  { property1: 'property1',
+  property2: 'property2',
+  property3: 'property3',
+  _meta: 
+   { created: 1586851786786,
+     modified: 1586851786786,
+     path: 'test1/testsubscribe/data/',
+     published: true,
+     type: 'response',
+     status: 'ok',
+     eventId: 5,
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     action: 'set' } }
+
+HANDLING MESSAGE ---->  { action: 'set',
+  eventId: 6,
+  path: 'test1/testsubscribe/data/',
+  data: 
+   { property1: 'property10',
+     property2: 'property2',
+     property3: 'property3' },
+  sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+  options: { noPublish: false, timeout: 60000 } }
+0 -> INBOUND MESSAGE (WITH SESSION DETAILS):  { raw: 
+   { action: 'set',
+     eventId: 6,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property10',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000 } },
+  session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 6 }
+1 -> TRANSFORMED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 6,
+  request: 
+   { action: 'set',
+     eventId: 6,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property10',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000 } } }
+2 -> AUTHORIZED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 6,
+  request: 
+   { action: 'set',
+     eventId: 6,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property10',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000 } } }
+3 -> STORED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 6,
+  request: 
+   { action: 'set',
+     eventId: 6,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property10',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000, upsert: true } },
+  response: 
+   { data: 
+      { property1: 'property10',
+        property2: 'property2',
+        property3: 'property3' },
+     _meta: 
+      { created: 1586851786786,
+        modified: 1586851786796,
+        _id: undefined,
+        path: 'test1/testsubscribe/data/' } } }
+4 -> PUBLISHED:  { session: 
+   { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     protocol: 'happn_4',
+     happn: 
+      { name: 'featherantler_gO9uOqcr6',
+        secure: false,
+        encryptPayloads: false,
+        publicKey: 'AwMzD148sMq4Tjx8Hc9zZOd+1XTiqR5OU/XYROtMM6n8' },
+     info: { _browser: false, _local: false } },
+  id: 6,
+  request: 
+   { action: 'set',
+     eventId: 6,
+     path: 'test1/testsubscribe/data/',
+     data: 
+      { property1: 'property10',
+        property2: 'property2',
+        property3: 'property3' },
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     options: { noPublish: false, timeout: 60000, upsert: true, consistency: 2 } },
+  response: 
+   { data: 
+      { property1: 'property10',
+        property2: 'property2',
+        property3: 'property3' },
+     _meta: 
+      { created: 1586851786786,
+        modified: 1586851786796,
+        _id: undefined,
+        path: 'test1/testsubscribe/data/',
+        published: true } },
+  publication: { id: '280d4337-bcbe-4e64-898d-c8236ef34d4a-6' } }
+EVENT MESSAGE:  { property1: 'property10',
+  property2: 'property2',
+  property3: 'property3' } { action: '/SET@test1/testsubscribe/data/',
+  type: 'data',
+  sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+  consistency: 2,
+  publicationId: '280d4337-bcbe-4e64-898d-c8236ef34d4a-6',
+  path: 'test1/testsubscribe/data/',
+  created: 1586851786786,
+  modified: 1586851786796,
+  channel: '/ALL@*' }
+:::::>>> RESULT 2:  { property1: 'property10',
+  property2: 'property2',
+  property3: 'property3',
+  _meta: 
+   { created: 1586851786786,
+     modified: 1586851786796,
+     path: 'test1/testsubscribe/data/',
+     published: true,
+     type: 'response',
+     status: 'ok',
+     eventId: 6,
+     sessionId: '280d4337-bcbe-4e64-898d-c8236ef34d4a',
+     action: 'set' } }

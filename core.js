@@ -1,7 +1,10 @@
 
+const Nedb = require('happn-nedb');
+const Utils = require('./lib/utils/utils');
 const QueueServiceProvider = require('./lib/providers/queue-service-provider');
 const SecurityService = require('./lib/services/security-service');
-const DataService = require('./lib/services/data-service');
+const DataServiceProvider = require('./lib/providers/data-service-provider');
+const DataService = require('./lib/services/nedb-data-service');
 const RouterService = require('./lib/services/router-service');
 const ActionServiceFactory = require('./lib/factories/action-service-factory');
 
@@ -12,7 +15,6 @@ module.exports = class Core {
     constructor() {
 
         this.__config = {
-
             happnMq: {
                 queues: [
                     { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
@@ -21,6 +23,12 @@ module.exports = class Core {
                     { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
                 ],
                 queueProvider: 'rabbitmq',  // to be interchangeable with other implementations, eg: rabbitmq, memory
+                data:{
+                    provider: 'nedb',
+                    filename: 'happn-mq-TEST',
+                    autoload: true,
+                    timestampData: true
+                },
                 host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
                 userName: process.env['RABBITMQ_USERNAME'],
                 password: process.env['RABBITMQ_PASSWORD']
@@ -35,10 +43,14 @@ module.exports = class Core {
         }
 
         // these dependencies will be handled by DI
+        this.__nedb = new Nedb(this.__config.happnMq.data);
+        this.__utils = Utils.create();
         this.__queueProvider = QueueServiceProvider.create(this.__config.happnMq, this.__logger);
+        this.__dataServiceProvider = DataServiceProvider.create(this.__config.happnMq, this.__logger, this.__nedb, this.__utils);
         this.__queueService = this.__queueProvider.getQueueService();
+        this.__dataService = this.__dataServiceProvider.getDataService();
         this.__securityService = SecurityService.create(this.__config.happnMq, this.__logger);
-        this.__dataService = DataService.create(this.__config.happnMq, this.__logger);
+        // this.__dataService = DataService.create(this.__config.happnMq, this.__logger);
 
         // actions
         let describeAction = new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__queueService);

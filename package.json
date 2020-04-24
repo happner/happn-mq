@@ -19,7 +19,10 @@
   "homepage": "https://github.com/happner/happn-mq#readme",
   "dependencies": {
     "amqplib": "^0.5.5",
-    "shortid": "^2.2.15"
+    "happn-nedb": "^1.9.0",
+    "happner-hyperid": "^2.0.0",
+    "shortid": "^2.2.15",
+    "underscore": "^1.10.2"
   },
   "devDependencies": {
     "expect.js": "^0.3.1",
