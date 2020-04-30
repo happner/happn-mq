@@ -16,6 +16,7 @@ module.exports = class Core {
 
         this.__config = {
             happnMq: {
+                trace: true,
                 queues: [
                     { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
                     { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
@@ -23,7 +24,7 @@ module.exports = class Core {
                     { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
                 ],
                 queueProvider: 'rabbitmq',  // to be interchangeable with other implementations, eg: rabbitmq, memory
-                data:{
+                data: {
                     provider: 'nedb',
                     filename: 'happn-mq-TEST',
                     autoload: true,
@@ -43,30 +44,30 @@ module.exports = class Core {
         }
 
         // these dependencies will be handled by DI
-        this.__nedb = new Nedb(this.__config.happnMq.data);
         this.__utils = Utils.create();
-        this.__queueProvider = QueueServiceProvider.create(this.__config.happnMq, this.__logger);
-        this.__dataServiceProvider = DataServiceProvider.create(this.__config.happnMq, this.__logger, this.__nedb, this.__utils);
-        this.__queueService = this.__queueProvider.getQueueService();
-        this.__dataService = this.__dataServiceProvider.getDataService();
-        this.__securityService = SecurityService.create(this.__config.happnMq, this.__logger);
-        // this.__dataService = DataService.create(this.__config.happnMq, this.__logger);
+        this.__nedb = new Nedb(this.__config.happnMq.data);
+        this.__nedbDataService = this.__setupTracing(DataService.create(this.__config, this.__logger, this.__nedb, this.__utils));
+        this.__queueProvider = this.__setupTracing(QueueServiceProvider.create(this.__config.happnMq, this.__logger));
+        this.__dataServiceProvider = this.__setupTracing(DataServiceProvider.create(this.__config.happnMq, this.__logger, this.__nedbDataService, this.__utils));
+        this.__queueService = this.__setupTracing(this.__queueProvider.getQueueService());
+        this.__dataService = this.__setupTracing(this.__dataServiceProvider.getDataService());
+        this.__securityService = this.__setupTracing(SecurityService.create(this.__config.happnMq, this.__logger));
 
         // actions
-        let describeAction = new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__queueService);
-        let loginAction = new (require(`./lib/services/actions/login`))(this.__config, this.__logger, this.__queueService, this.__securityService);
-        let getAction = new (require(`./lib/services/actions/get`))(this.__config, this.__logger, this.__queueService);
-        let offAction = new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__queueService);
-        let onAction = new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__queueService);
-        let removeAction = new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__queueService);
-        let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService);
+        let describeAction = this.__setupTracing(new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__queueService, this.__utils));
+        let loginAction = this.__setupTracing(new (require(`./lib/services/actions/login`))(this.__config, this.__logger, this.__queueService, this.__securityService, this.__utils));
+        let getAction = this.__setupTracing(new (require(`./lib/services/actions/get`))(this.__config, this.__logger, this.__queueService, this.__utils));
+        let offAction = this.__setupTracing(new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__queueService, this.__utils));
+        let onAction = this.__setupTracing(new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__queueService, this.__utils));
+        let removeAction = this.__setupTracing(new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__queueService, this.__utils));
+        let setAction = this.__setupTracing(new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils));
 
         this.__actions = {
             describeAction, loginAction, getAction, offAction, onAction, removeAction, setAction
         }
 
         this.__actionServiceFactory = ActionServiceFactory.create(this.__config, this.__logger, this.__actions);
-        this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
+        this.__routerService = this.__setupTracing(RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
     }
 
     static create() {
@@ -89,22 +90,29 @@ module.exports = class Core {
         await this.__routerService.start();
     }
 
+    __setupTracing(obj) {
+        if (this.__config.happnMq.trace)
+            return this.__utils.traceMethodCalls(obj);
+
+        return obj;
+    }
+
     // this is invoked by happn-3's session service 
     async processInboundMessage(msg) {
-        console.log('Adding to inbound queue.....');
+        // console.log('Adding to inbound queue.....');
         await this.__queueService.add('HAPPN_WORKER_IN', msg);
     }
 
     // set by happn-3 so that the session service can respond to the client
     async setOutboundWorkerQueueHandler(handler) {
-        console.log('Binding handler to outbound worker queue.....');
+        // console.log('Binding handler to outbound worker queue.....');
         let queueName = this.__findQueueNameByType('worker_out');
         await this.__queueService.setHandler(queueName, handler);
     }
 
     // set by happn-3 so that the session service can respond to the client
     async setOutboundPubsubQueueHandler(handler) {
-        console.log('Binding handler to outbound pubsub queue.....');
+        // console.log('Binding handler to outbound pubsub queue.....');
         let queueName = this.__findQueueNameByType('pubsub_out');
         await this.__queueService.setHandler(queueName, handler);
     }
