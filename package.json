@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "nyc mocha test/unit/*",
+    "lint": "eslint '**/*.js'",
+    "test": "npm run lint && nyc mocha test/unit/**",
     "integration-test": "nyc mocha test/integration/*"
   },
   "repository": {

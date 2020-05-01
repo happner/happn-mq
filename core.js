@@ -67,7 +67,7 @@ module.exports = class Core {
         }
 
         this.__actionServiceFactory = ActionServiceFactory.create(this.__config, this.__logger, this.__actions);
-        this.__routerService = this.__setupTracing(RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
+        this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
     }
 
     static create() {
@@ -84,7 +84,7 @@ module.exports = class Core {
         // start the queues
         for (let queue of this.__config.happnMq.queues) {
             this.__queueService.startQueue(queue.name);
-        };
+        }
 
         // set up the router service
         await this.__routerService.start();
@@ -119,7 +119,7 @@ module.exports = class Core {
 
     __findQueueNameByType(type) {
         return this.__config.happnMq.queues.find(queue => {
-            return queue.type == type;
+            return queue.type === type;
         }).name;
     }
 }

@@ -43,7 +43,7 @@ describe('memory-queue-service-tests', function () {
                 expect(eventObj.content.testId).to.equal(msgCount.toString());
                 expect(eventObj.status).to.equal('acked');
 
-                if (msgCount == 4)
+                if (msgCount === 4)
                     resolve();
             };
 

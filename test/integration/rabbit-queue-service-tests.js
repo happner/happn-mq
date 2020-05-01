@@ -38,7 +38,7 @@ describe('rabbit-queue-tests', async () => {
 
         //create a queue handler
         let handler = (channel, msg) => {
-            result = msg.content.toString();
+            let result = msg.content.toString();
             channel.ack(msg);
 
             console.log(result);

@@ -184,7 +184,7 @@ describe('rabbit-queue-service-tests', function () {
 
                 closedCount++;
 
-                if (closedCount == 2) {
+                if (closedCount === 2) {
                     // expectations
                     expect(mockAmqpClient.counter.connectCount).to.equal(2);
                     expect(mockAmqpClient.counter.createChannelCount).to.equal(2);
@@ -475,10 +475,10 @@ describe('rabbit-queue-service-tests', function () {
         let channel = {
             eventEmitter: channelEmitter,
             raiseEvent: (type, msg) => {
-                if (type == 'error')
+                if (type === 'error')
                     counter.channelErrorEventCount += 1;
 
-                if (type == 'close')
+                if (type === 'close')
                     counter.channelCloseEventCount += 1;
 
                 channel.eventEmitter.emit(type, msg);
@@ -506,10 +506,10 @@ describe('rabbit-queue-service-tests', function () {
         let connection = {
             eventEmitter: connectionEmitter,
             raiseEvent: (type, msg) => {
-                if (type == 'error')
+                if (type === 'error')
                     counter.connectionErrorEventCount += 1;
 
-                if (type == 'close')
+                if (type === 'close')
                     counter.connectionCloseEventCount += 1;
 
                 connection.eventEmitter.emit(type, msg);
