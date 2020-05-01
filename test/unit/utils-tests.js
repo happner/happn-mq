@@ -126,9 +126,9 @@ describe('set-results-builder-tests', async () => {
         let wrapped = this.__utils.traceMethodCalls(this.__testObj);
 
         try {
-            wrapped.testAsyncFuncWithError();
+            await wrapped.testAsyncFuncWithError();
         } catch (err) {
-            expect(err.message).to.equal('test sync func error');
+            expect(err.message).to.equal('test async func error');
         }
     });
 
