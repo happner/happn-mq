@@ -1,5 +1,6 @@
 const expect = require('expect.js');
 const RabbitQueueService = require('../../lib/services/rabbit-queue-service');
+const AmqpClient = require('amqplib');
 
 describe('rabbit-queue-tests', async () => {
 
@@ -13,7 +14,15 @@ describe('rabbit-queue-tests', async () => {
             password: process.env['RABBITMQ_PASSWORD']
         }
 
-        this.__queueService = RabbitQueueService.create(this.__config);
+        this.__logger = {
+            info: (msg, obj) => { if (!obj) console.info(msg); else console.info(msg, obj); },
+            warn: (msg, obj) => { if (!obj) console.warn(msg); else console.warn(msg, obj); },
+            debug: (msg, obj) => { if (!obj) console.debug(msg); else console.debug(msg, obj) },
+            error: (msg, err) => { if (!err) console.error(msg); else console.error(msg, err) }
+        }
+
+        //config, logger, amqpClient
+        this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
         await this.__queueService.initialize();
     });
 
