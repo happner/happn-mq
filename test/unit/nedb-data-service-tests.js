@@ -4,6 +4,7 @@ const Nedb = require('happn-nedb');
 
 const DataService = require('../../lib/services/nedb-data-service');
 const Utils = require('../../lib/utils/utils');
+const Stave = require('stave');
 
 describe('nedb-data-service-tests', function () {
 
@@ -12,6 +13,7 @@ describe('nedb-data-service-tests', function () {
     before('setup', async () => {
 
         this.__utils = new Utils();
+        this.__stave = new Stave();
         this.__mocker = new Mocker();
         this.__config = {};
         this.__logger = {
@@ -25,17 +27,17 @@ describe('nedb-data-service-tests', function () {
     after('stop', async () => {
     });
 
-    it('successfully upserts data', async () => {
+    it('successfully upserts data where path and options not present', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', {})
-            .withAsyncStub('update', {})
+            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('update', [null, {}])
             .create();
 
         const utils = new Utils();
 
-        // system under test (using utils.traceMethodCalls to get detailed tracing)
-        const dataService = this.__utils.traceMethodCalls(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        // system under test
+        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
 
         let testMsg = {
             path: '/test',
@@ -50,14 +52,14 @@ describe('nedb-data-service-tests', function () {
     it('successfully upserts data as a sibling', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', {})
-            .withAsyncStub('update', {})
+            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('update', [null, {}])
             .create();
 
         const utils = new Utils();
 
-        // system under test (using utils.traceMethodCalls to get detailed tracing)
-        const dataService = this.__utils.traceMethodCalls(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        // system under test
+        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
 
         let testMsg = {
             path: '/test',
@@ -76,14 +78,14 @@ describe('nedb-data-service-tests', function () {
     it('successfully upserts a tag', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', {})
-            .withAsyncStub('update', {})
+            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('update', [null, {}])
             .create();
 
         const utils = new Utils();
 
-        // system under test (using utils.traceMethodCalls to get detailed tracing)
-        const dataService = this.__utils.traceMethodCalls(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        // system under test
+        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
 
         let testMsg = {
             path: '/test',
@@ -101,14 +103,14 @@ describe('nedb-data-service-tests', function () {
     it('throws an error if no data or path', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', {})
-            .withAsyncStub('update', {})
+            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('update', [null, {}])
             .create();
 
         const utils = new Utils();
 
-        // system under test (using utils.traceMethodCalls to get detailed tracing)
-        const dataService = this.__utils.traceMethodCalls(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        // system under test
+        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
 
         let testMsg = {};
 
@@ -123,14 +125,14 @@ describe('nedb-data-service-tests', function () {
     it('throws an error if data and tag present in same payload', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', {})
-            .withAsyncStub('update', {})
+            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('update', [null, {}])
             .create();
 
         const utils = new Utils();
 
-        // system under test (using utils.traceMethodCalls to get detailed tracing)
-        const dataService = this.__utils.traceMethodCalls(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        // system under test
+        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
 
         let testMsg = {
             data: { testKey: 'testValue' },
@@ -145,6 +147,96 @@ describe('nedb-data-service-tests', function () {
         } catch (err) {
             expect(err.message).to.equal('Cannot set tag with new data.');
         }
+
+    });
+
+    it('successfully merges data', async () => {
+
+        let updatedTimeStamp = Date.now();
+
+        let initial = {
+            e: null,
+            response: 1,
+            created:
+            {
+                _id: '/merge/6712s1MCG',
+                data: { test: 'data' },
+                path: '/merge/6712s1MCG',
+                created: 1588589116078,
+                modified: 1588589116078
+            },
+            upsert: true,
+            meta:
+            {
+                created: 1588589116078,
+                modified: 1588589116078,
+                modifiedBy: undefined,
+                path: '/merge/6712s1MCG',
+                _id: '/merge/6712s1MCG'
+            }
+        };
+
+        let updated = {
+            e: null,
+            response: 1,
+            created: undefined,
+            upsert: undefined,
+            meta:
+            {
+                created: 1588589116078,
+                modified: 1588589117087,
+                _id: '/merge/6712s1MCG',
+                path: '/merge/6712s1MCG'
+            }
+        }
+
+        const mockNedb = this.__mocker.mock(Nedb.prototype)
+            .withAsyncStub('findOne', [null, initial])
+            .withAsyncStub('update', [null, updated])
+            .create();
+
+        const utils = new Utils();
+
+        // system under test
+        // const dataService = this.__utils.traceMethodCalls(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
+
+        let msg = {
+            data: { testKey: 'testValue', testKey2: 'testKey2Value' },
+            path: '/merge/6712s1MCG',
+            options: {
+                merge: true
+            }
+        };
+
+        let result = {
+            data: { testKey: 'testValue', testKey2: 'testKey2Value' },
+            _meta:
+            {
+                created: undefined,
+                modified: undefined,
+                modifiedBy: undefined,
+                path: '/merge/6712s1MCG',
+                _id: undefined
+            },
+            response:
+            {
+                e: null,
+                response: 1,
+                created: undefined,
+                upsert: undefined,
+                meta:
+                {
+                    created: 1588589116078,
+                    modified: 1588589117087,
+                    _id: '/merge/6712s1MCG',
+                    path: '/merge/6712s1MCG'
+                }
+            }
+        };
+
+        let upserted = await dataService.upsert(msg);
+        // expect(upserted).to.equal(updated);
 
     });
 

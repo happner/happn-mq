@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint '**/*.js'",
-    "test": "npm run lint && nyc mocha test/unit/**",
+    "test": "npm run lint && nyc mocha test/unit/*",
     "integration-test": "nyc mocha test/integration/*"
   },
   "repository": {
@@ -24,7 +24,8 @@
     "happn-nedb": "^1.9.0",
     "happner-hyperid": "^2.0.0",
     "shortid": "^2.2.15",
-    "underscore": "^1.10.2"
+    "underscore": "^1.10.2",
+    "stave": "https://gitlab.com/leebow/stave"
   },
   "devDependencies": {
     "eslint": "^6.8.0",

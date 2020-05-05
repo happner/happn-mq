@@ -1,4 +1,5 @@
 
+const Stave = require('stave');
 const Nedb = require('happn-nedb');
 const Utils = require('./lib/utils/utils');
 const QueueServiceProvider = require('./lib/providers/queue-service-provider');
@@ -43,10 +44,13 @@ module.exports = class Core {
             error: (msg, err) => { if (!err) console.error(msg); else console.error(msg, err) }
         }
 
+        this.__stave = new Stave();
+
         // these dependencies will be handled by DI
         this.__utils = Utils.create();
         this.__nedb = new Nedb(this.__config.happnMq.data);
-        this.__nedbDataService = this.__setupTracing(DataService.create(this.__config, this.__logger, this.__nedb, this.__utils));
+        // this.__nedbDataService = this.__setupTracing(DataService.create(this.__config, this.__logger, this.__nedb, this.__utils));
+        this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedb, this.__utils);
         this.__queueProvider = this.__setupTracing(QueueServiceProvider.create(this.__config.happnMq, this.__logger));
         this.__dataServiceProvider = this.__setupTracing(DataServiceProvider.create(this.__config.happnMq, this.__logger, this.__nedbDataService, this.__utils));
         this.__queueService = this.__setupTracing(this.__queueProvider.getQueueService());
@@ -92,7 +96,7 @@ module.exports = class Core {
 
     __setupTracing(obj) {
         if (this.__config.happnMq.trace)
-            return this.__utils.traceMethodCalls(obj);
+            return this.__stave.trace(obj);
 
         return obj;
     }
