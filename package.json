@@ -25,13 +25,14 @@
     "happner-hyperid": "^2.0.0",
     "shortid": "^2.2.15",
     "underscore": "^1.10.2",
-    "stave": "https://gitlab.com/leebow/stave"
+    "xpozr": "0.0.1"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
     "expect.js": "^0.3.1",
     "mini-mock": "^0.3.0",
     "mocha": "^7.1.0",
-    "nyc": "^15.0.0"
+    "nyc": "^15.0.0",
+    "uuid": "^8.0.0"
   }
 }

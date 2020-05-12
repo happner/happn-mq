@@ -1,5 +1,6 @@
 
-const Stave = require('stave');
+// const Xpozr = require('xpozr');
+const Xpozr = require('../../Leebow/xposer');
 const Nedb = require('happn-nedb');
 const Utils = require('./lib/utils/utils');
 const QueueServiceProvider = require('./lib/providers/queue-service-provider');
@@ -44,34 +45,34 @@ module.exports = class Core {
             error: (msg, err) => { if (!err) console.error(msg); else console.error(msg, err) }
         }
 
-        this.__stave = new Stave();
+        this.__xpozr = new Xpozr();
 
         // these dependencies will be handled by DI
         this.__utils = Utils.create();
         this.__nedb = new Nedb(this.__config.happnMq.data);
         // this.__nedbDataService = this.__setupTracing(DataService.create(this.__config, this.__logger, this.__nedb, this.__utils));
         this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedb, this.__utils);
-        this.__queueProvider = this.__setupTracing(QueueServiceProvider.create(this.__config.happnMq, this.__logger));
-        this.__dataServiceProvider = this.__setupTracing(DataServiceProvider.create(this.__config.happnMq, this.__logger, this.__nedbDataService, this.__utils));
-        this.__queueService = this.__setupTracing(this.__queueProvider.getQueueService());
-        this.__dataService = this.__setupTracing(this.__dataServiceProvider.getDataService());
-        this.__securityService = this.__setupTracing(SecurityService.create(this.__config.happnMq, this.__logger));
+        this.__queueProvider = QueueServiceProvider.create(this.__config.happnMq, this.__logger);
+        this.__dataServiceProvider = DataServiceProvider.create(this.__config.happnMq, this.__logger, this.__nedbDataService, this.__utils);
+        this.__queueService = this.__queueProvider.getQueueService();
+        this.__dataService = this.__dataServiceProvider.getDataService();
+        this.__securityService = SecurityService.create(this.__config.happnMq, this.__logger);
 
         // actions
-        let describeAction = this.__setupTracing(new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__queueService, this.__utils));
-        let loginAction = this.__setupTracing(new (require(`./lib/services/actions/login`))(this.__config, this.__logger, this.__queueService, this.__securityService, this.__utils));
-        let getAction = this.__setupTracing(new (require(`./lib/services/actions/get`))(this.__config, this.__logger, this.__queueService, this.__utils));
-        let offAction = this.__setupTracing(new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__queueService, this.__utils));
-        let onAction = this.__setupTracing(new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__queueService, this.__utils));
-        let removeAction = this.__setupTracing(new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__queueService, this.__utils));
-        let setAction = this.__setupTracing(new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils));
+        let describeAction = new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__queueService, this.__utils);
+        let loginAction = new (require(`./lib/services/actions/login`))(this.__config, this.__logger, this.__queueService, this.__securityService, this.__utils);
+        let getAction = new (require(`./lib/services/actions/get`))(this.__config, this.__logger, this.__queueService, this.__utils);
+        let offAction = new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__queueService, this.__utils);
+        let onAction = new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__queueService, this.__utils);
+        let removeAction = new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__queueService, this.__utils);
+        let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils);
 
         this.__actions = {
             describeAction, loginAction, getAction, offAction, onAction, removeAction, setAction
         }
 
         this.__actionServiceFactory = ActionServiceFactory.create(this.__config, this.__logger, this.__actions);
-        this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
+        this.__routerService = this.__setupTracing(RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
     }
 
     static create() {
@@ -96,7 +97,7 @@ module.exports = class Core {
 
     __setupTracing(obj) {
         if (this.__config.happnMq.trace)
-            return this.__stave.trace(obj);
+            return this.__xpozr.trace(obj);
 
         return obj;
     }

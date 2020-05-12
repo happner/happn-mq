@@ -4,7 +4,6 @@ const Nedb = require('happn-nedb');
 
 const DataService = require('../../lib/services/nedb-data-service');
 const Utils = require('../../lib/utils/utils');
-const Stave = require('stave');
 
 describe('nedb-data-service-tests', function () {
 
@@ -13,7 +12,6 @@ describe('nedb-data-service-tests', function () {
     before('setup', async () => {
 
         this.__utils = new Utils();
-        this.__stave = new Stave();
         this.__mocker = new Mocker();
         this.__config = {};
         this.__logger = {
@@ -27,7 +25,7 @@ describe('nedb-data-service-tests', function () {
     after('stop', async () => {
     });
 
-    it('successfully upserts data where path and options not present', async () => {
+    it('successfully upserts data with path and NO options', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
             .withAsyncStub('findOne', [null, {}])
@@ -37,11 +35,48 @@ describe('nedb-data-service-tests', function () {
         const utils = new Utils();
 
         // system under test
-        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
             path: '/test',
             data: { testKey: 'testValue' }
+        };
+
+        let result = await dataService.upsert(testMsg);
+        expect(result.data).to.equal(testMsg.data);
+
+    });
+
+    it('successfully upserts data with path and options', async () => {
+
+        const mockNedb = this.__mocker.mock(Nedb.prototype)
+            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('update', [null, {}])
+            .create();
+
+        const utils = new Utils();
+
+        // system under test
+        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
+
+        let testMsg = {
+            path: '/test',
+            data: {
+                data:
+                {
+                    property1: 'property1',
+                    property2: 'property2',
+                    property3: 'property3'
+                },
+                _meta: { path: '/test' }
+            },
+            options: {
+                noPublish: true,
+                merge: true,
+                timeout: 60000,
+                upsertType: 2,
+                upsert: true
+            }
         };
 
         let result = await dataService.upsert(testMsg);
@@ -59,7 +94,7 @@ describe('nedb-data-service-tests', function () {
         const utils = new Utils();
 
         // system under test
-        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
             path: '/test',
@@ -85,7 +120,7 @@ describe('nedb-data-service-tests', function () {
         const utils = new Utils();
 
         // system under test
-        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
             path: '/test',
@@ -110,7 +145,7 @@ describe('nedb-data-service-tests', function () {
         const utils = new Utils();
 
         // system under test
-        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {};
 
@@ -132,7 +167,7 @@ describe('nedb-data-service-tests', function () {
         const utils = new Utils();
 
         // system under test
-        const dataService = this.__stave.trace(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
             data: { testKey: 'testValue' },
