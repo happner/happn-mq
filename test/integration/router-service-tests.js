@@ -45,6 +45,7 @@ describe('router-service-tests', (done) => {
         this.__utils = Utils.create();
 
         // queue service
+        // this.__queueService = tracer.trace(RabbitQueueService.create(this.__config, this.__logger, AmqpClient));
         this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
         await this.__queueService.initialize();
 
@@ -57,6 +58,7 @@ describe('router-service-tests', (done) => {
         this.__dataService = NedbDataService.create(this.__config, this.__logger, nedb, this.__utils);
 
         // actions
+        // let setAction = tracer.trace(new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils));
         let setAction = new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils);
         this.__actions = { setAction };
 
@@ -68,7 +70,8 @@ describe('router-service-tests', (done) => {
             this.__queueService.startQueue(queue.name);
         }
 
-        // system under test
+        // SYSTEM UNDER TEST
+        // this.__routerService = tracer.trace(RouterService.create(this.__config, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
         this.__routerService = RouterService.create(this.__config, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
         await this.__routerService.start();
 
@@ -76,33 +79,47 @@ describe('router-service-tests', (done) => {
         this.__executeExpectations = null;
 
         // the outbound queue handler
-        this.__outboundHandler = (channel, queueItem) => {
+        // this.__outboundHandler = (channel, queueItem) => {
 
-            if (!queueItem)
-                return done(new Error('Queue item is empty'))
+        //     if (!queueItem)
+        //         return done(new Error('Queue item is empty'))
 
-            try {
-                let outboundMsg = queueItem.content;
-                let msgObj = JSON.parse(outboundMsg);
+        //     try {
+        //         let outboundMsg = queueItem.content;
+        //         let msgObj = JSON.parse(outboundMsg);
 
-                this.__executeExpectations(msgObj);
-            } finally {
-                channel.ack(queueItem);
-            }
+        //         this.__executeExpectations(msgObj);
+        //     } finally {
+        //         channel.ack(queueItem);
+        //     }
+        // }
+
+        // this.__queueService.setHandler('HAPPN_WORKER_OUT', this.__outboundHandler);
+
+    });
+
+    beforeEach('cleanup', async () => {
+        try {
+            fs.unlinkSync(this.__config.data.filename); // careful!
+        } catch (err) {
+            console.log('No db files to clean up...');
         }
-
-        this.__queueService.setHandler('HAPPN_WORKER_OUT', this.__outboundHandler);
-
     });
 
     after('stop', async () => {
         await this.__queueService.stop();
-
-        // careful!
-        fs.unlinkSync(this.__config.data.filename);
     });
 
-    it('successfully handles a SET message', (done) => {
+    afterEach('file cleanup', async () => {
+        // careful!
+        // fs.unlinkSync(this.__config.data.filename);
+    });
+
+    afterEach('listener cleanup', async () => {
+        this.__queueService.removeAllListeners('itemAdded');
+    });
+
+    it('successfully handles SET message on inbound queue and adds response to outbound queue', (done) => {
 
         let testData = {
             property1: 'property1',
@@ -111,64 +128,154 @@ describe('router-service-tests', (done) => {
         };
 
         // test SET message
-        let testMsg = getBaseSetMsg(false, testData);
+        let testMsg = getBaseSetMsg(testData);
 
-        this.__executeExpectations = (msgObj) => {
-            expect(msgObj.response.data).to.eql(testData);
-            done();
-        }
+        this.__queueService.on('itemAdded', (eventObj) => {
+
+            if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
+                let outboundMsg = JSON.parse(eventObj.item);
+                expect(outboundMsg.response.data).to.eql(testData);
+                done();
+            }
+        })
 
         // add this to the inbound queue
         this.__queueService.add('HAPPN_WORKER_IN', testMsg);
 
     });
 
-    // depends on the previous test to do the initial SET
-    it('successfully handles a SET message in the same session with MERGE option', (done) => {
+    // creates an initial record; then merges a second record with the first one
+    it('successfully handles a SET message with MERGE option', (done) => {
 
-        let testData = {
+        // initial 
+
+        let initialData = {
+            property1: 'property1',
+            property2: 'property2',
+            property3: 'property3'
+        };
+
+        let initialMsg = getBaseSetMsg(initialData);
+
+        // final
+
+        let finalData = {
             property4: 'property4'
         };
 
-        // test SET message
-        let testMsg = getBaseSetMsg(false, testData, true);
+        let finalMsg = getBaseSetMsg(finalData, false, false, true, false);
 
-        let expectedData = {
+        // expectations
+
+        let expectedResponseData = {
             property1: 'property1',
             property2: 'property2',
             property3: 'property3',
             property4: 'property4'
         };
 
-        this.__executeExpectations = (msgObj) => {
-            expect(msgObj.response.data).to.eql(expectedData);
-            done();
-        }
+        let msgCount = 0;
 
-        // add this to the inbound queue
-        this.__queueService.add('HAPPN_WORKER_IN', testMsg);
+        this.__queueService.on('itemAdded', (eventObj) => {
+
+            if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
+
+                msgCount += 1;
+
+                if (msgCount === 2) {
+                    let outboundMsg = JSON.parse(eventObj.item);
+                    expect(outboundMsg.response.data).to.eql(expectedResponseData);
+                    done();
+                }
+            }
+        })
+
+        this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
+        this.__queueService.add('HAPPN_WORKER_IN', finalMsg);
+    });
+
+    // creates an initial record; then adds additional record on same path as sibling
+    it('successfully handles a SET message in the same session with SIBLING option', (done) => {
+
+        // initial 
+
+        let initialData = {
+            property1: 'property1',
+            property2: 'property2',
+            property3: 'property3'
+        };
+
+        let initialMsg = getBaseSetMsg(initialData);
+
+        // final
+
+        let finalData = {
+            property5: 'property5'
+        };
+
+        let finalMsg = getBaseSetMsg(finalData, false, false, false, true);
+
+        // expectations
+
+        let expectedResponseData = {
+            property5: 'property5'
+        };
+
+        let msgCount = 0;
+
+        this.__queueService.on('itemAdded', (eventObj) => {
+
+            if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
+
+                msgCount += 1;
+
+                if (msgCount === 2) {
+                    let outboundMsg = JSON.parse(eventObj.item);
+
+                    expect(outboundMsg.response.data).to.eql(expectedResponseData);
+
+                    // check that the path has been appended with a random id
+                    let pathLen = finalMsg.raw.path.split('/').length;
+                    let storedPathLen = outboundMsg.response._meta.path.split('/').length;
+                    expect(storedPathLen).to.equal(pathLen + 1);
+
+                    done();
+                }
+            }
+        })
+
+        this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
+        this.__queueService.add('HAPPN_WORKER_IN', finalMsg);
     });
 
     /*
      HELPERS
      */
 
-    function getBaseSetMsg(newSession, data, merge) {
+    function getBaseSetMsg(data, isNewSession = false, isPublish = false, isMerge = false, isSibling = false) {
 
-        let uuid = newSession ? uuidv4() : 'ba27b60a-6074-447c-ac86-024835500eb0';
+        let uuid = isNewSession ? uuidv4() : 'ba27b60a-6074-447c-ac86-024835500eb0';
+
+        let options = {
+            noPublish: !isPublish,
+            merge: isMerge,
+            timeout: 60000
+        };
+
+        if (isSibling) {
+            options.set_type = 'sibling';
+        }
 
         return {
-            raw:
-            {
+            raw: {
                 action: 'set',
                 eventId: 6,
-                path: 'test1/testsubscribe/data/',
+                path: 'test1/testset/data',
                 data: data,
                 sessionId: uuid,
-                options: { noPublish: true, merge: merge, timeout: 60000 }
+                options: options
             },
-            session:
-            {
+            session: {
                 id: uuid,
                 protocol: 'happn_4',
                 happn:
@@ -180,14 +287,12 @@ describe('router-service-tests', (done) => {
                 }
             },
             id: 6,
-            request:
-            {
+            request: {
                 sessionId: uuid,
                 data: data
             }
         }
     }
-
 })
 
 
