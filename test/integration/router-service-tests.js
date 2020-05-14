@@ -75,27 +75,6 @@ describe('router-service-tests', (done) => {
         this.__routerService = RouterService.create(this.__config, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
         await this.__routerService.start();
 
-        // each test will have it's own expectations function which is executed by the handler
-        this.__executeExpectations = null;
-
-        // the outbound queue handler
-        // this.__outboundHandler = (channel, queueItem) => {
-
-        //     if (!queueItem)
-        //         return done(new Error('Queue item is empty'))
-
-        //     try {
-        //         let outboundMsg = queueItem.content;
-        //         let msgObj = JSON.parse(outboundMsg);
-
-        //         this.__executeExpectations(msgObj);
-        //     } finally {
-        //         channel.ack(queueItem);
-        //     }
-        // }
-
-        // this.__queueService.setHandler('HAPPN_WORKER_OUT', this.__outboundHandler);
-
     });
 
     beforeEach('cleanup', async () => {
@@ -108,11 +87,6 @@ describe('router-service-tests', (done) => {
 
     after('stop', async () => {
         await this.__queueService.stop();
-    });
-
-    afterEach('file cleanup', async () => {
-        // careful!
-        // fs.unlinkSync(this.__config.data.filename);
     });
 
     afterEach('listener cleanup', async () => {
@@ -246,6 +220,33 @@ describe('router-service-tests', (done) => {
 
         this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
         this.__queueService.add('HAPPN_WORKER_IN', finalMsg);
+    });
+
+    it('successfully handles a SET message and publishes on the pubsub queue', (done) => {
+
+        // initial 
+
+        let initialData = {
+            property1: 'property1',
+            property2: 'property2',
+            property3: 'property3'
+        };
+
+        let initialMsg = getBaseSetMsg(initialData, false, true, false, false);
+
+        this.__queueService.on('itemAdded', (eventObj) => {
+
+            if (eventObj.queueName === 'HAPPN_PUBSUB_OUT') {
+
+                let outboundMsg = JSON.parse(eventObj.item);
+
+                expect(outboundMsg.response.data).to.eql(initialData);
+
+                done();
+            }
+        })
+
+        this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
     });
 
     /*

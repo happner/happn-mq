@@ -1,6 +1,5 @@
 
-// const Xpozr = require('xpozr');
-const Xpozr = require('../../Leebow/xposer');
+const Xpozr = require('xpozr');
 const Nedb = require('happn-nedb');
 const Utils = require('./lib/utils/utils');
 const QueueServiceProvider = require('./lib/providers/queue-service-provider');
@@ -14,28 +13,27 @@ const ActionServiceFactory = require('./lib/factories/action-service-factory');
 module.exports = class Core {
 
     // TODO - use constructor injection...
-    constructor() {
+    constructor(config) {
 
-        this.__config = {
-            happnMq: {
-                trace: true,
-                queues: [
-                    { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
-                    { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
-                    { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
-                    { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
-                ],
-                queueProvider: 'rabbitmq',  // to be interchangeable with other implementations, eg: rabbitmq, memory
-                data: {
-                    provider: 'nedb',
-                    filename: 'happn-mq-TEST',
-                    autoload: true,
-                    timestampData: true
-                },
-                host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
-                userName: process.env['RABBITMQ_USERNAME'],
-                password: process.env['RABBITMQ_PASSWORD']
-            }
+        // defaults if the config is null
+        this.__config = config ? config : {
+            trace: true,
+            queues: [
+                { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
+                { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
+                { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
+                { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
+            ],
+            queueProvider: 'rabbitmq',  // to be interchangeable with other implementations, eg: rabbitmq, memory
+            data: {
+                provider: 'nedb',
+                filename: 'happn-MQ',
+                autoload: true,
+                timestampData: true
+            },
+            host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
+            userName: process.env['RABBITMQ_USERNAME'],
+            password: process.env['RABBITMQ_PASSWORD']
         };
 
         this.__logger = {
@@ -49,14 +47,14 @@ module.exports = class Core {
 
         // these dependencies will be handled by DI
         this.__utils = Utils.create();
-        this.__nedb = new Nedb(this.__config.happnMq.data);
+        this.__nedb = new Nedb(this.__config.data);
         // this.__nedbDataService = this.__setupTracing(DataService.create(this.__config, this.__logger, this.__nedb, this.__utils));
         this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedb, this.__utils);
-        this.__queueProvider = QueueServiceProvider.create(this.__config.happnMq, this.__logger);
-        this.__dataServiceProvider = DataServiceProvider.create(this.__config.happnMq, this.__logger, this.__nedbDataService, this.__utils);
+        this.__queueProvider = QueueServiceProvider.create(this.__config, this.__logger);
+        this.__dataServiceProvider = DataServiceProvider.create(this.__config, this.__logger, this.__nedbDataService, this.__utils);
         this.__queueService = this.__queueProvider.getQueueService();
         this.__dataService = this.__dataServiceProvider.getDataService();
-        this.__securityService = SecurityService.create(this.__config.happnMq, this.__logger);
+        this.__securityService = SecurityService.create(this.__config, this.__logger);
 
         // actions
         let describeAction = new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__queueService, this.__utils);
@@ -87,7 +85,7 @@ module.exports = class Core {
         await this.__queueService.initialize();
 
         // start the queues
-        for (let queue of this.__config.happnMq.queues) {
+        for (let queue of this.__config.queues) {
             this.__queueService.startQueue(queue.name);
         }
 
@@ -96,7 +94,7 @@ module.exports = class Core {
     }
 
     __setupTracing(obj) {
-        if (this.__config.happnMq.trace)
+        if (this.__config.trace)
             return this.__xpozr.trace(obj);
 
         return obj;
@@ -123,7 +121,7 @@ module.exports = class Core {
     }
 
     __findQueueNameByType(type) {
-        return this.__config.happnMq.queues.find(queue => {
+        return this.__config.queues.find(queue => {
             return queue.type === type;
         }).name;
     }
