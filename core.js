@@ -70,7 +70,8 @@ module.exports = class Core {
         }
 
         this.__actionServiceFactory = ActionServiceFactory.create(this.__config, this.__logger, this.__actions);
-        this.__routerService = this.__setupTracing(RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
+        // this.__routerService = this.__setupTracing(RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
+        this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
     }
 
     static create() {

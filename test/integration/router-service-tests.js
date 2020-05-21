@@ -46,8 +46,8 @@ describe('router-service-tests', (done) => {
         this.__utils = Utils.create();
 
         // queue service
-        this.__queueService = tracer.trace(RabbitQueueService.create(this.__config, this.__logger, AmqpClient));
-        // this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
+        // this.__queueService = tracer.trace(RabbitQueueService.create(this.__config, this.__logger, AmqpClient));
+        this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
         await this.__queueService.initialize();
 
         // security service
@@ -109,7 +109,7 @@ describe('router-service-tests', (done) => {
         this.__queueService.on('itemAdded', (eventObj) => {
 
             if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
-                let outboundMsg = JSON.parse(eventObj.item);
+                let outboundMsg = eventObj.item;
                 expect(outboundMsg.response.data).to.eql(testData);
                 done();
             }
@@ -159,7 +159,7 @@ describe('router-service-tests', (done) => {
                 msgCount += 1;
 
                 if (msgCount === 2) {
-                    let outboundMsg = JSON.parse(eventObj.item);
+                    let outboundMsg = eventObj.item;
                     expect(outboundMsg.response.data).to.eql(expectedResponseData);
                     done();
                 }
@@ -206,7 +206,7 @@ describe('router-service-tests', (done) => {
                 msgCount += 1;
 
                 if (msgCount === 2) {
-                    let outboundMsg = JSON.parse(eventObj.item);
+                    let outboundMsg = eventObj.item;
 
                     expect(outboundMsg.response.data).to.eql(expectedResponseData);
 
@@ -240,7 +240,7 @@ describe('router-service-tests', (done) => {
 
             if (eventObj.queueName === 'HAPPN_PUBSUB_OUT') {
 
-                let outboundMsg = JSON.parse(eventObj.item);
+                let outboundMsg = eventObj.item;
 
                 expect(outboundMsg.response.data).to.eql(initialData);
 
