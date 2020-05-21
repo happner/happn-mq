@@ -5,6 +5,7 @@ const AmqpClient = require('amqplib');
 const { v4: uuidv4 } = require('uuid');
 const Nedb = require('happn-nedb');
 const RabbitQueueService = require('../../lib/services/rabbit-queue-service');
+// const MemoryQueueService = require('../../lib/services/memory-queue-service');
 const RouterService = require('../../lib/services/router-service');
 const SecurityService = require('../../lib/services/security-service');
 const ActionServiceFactory = require('../../lib/factories/action-service-factory');
@@ -45,8 +46,8 @@ describe('router-service-tests', (done) => {
         this.__utils = Utils.create();
 
         // queue service
-        // this.__queueService = tracer.trace(RabbitQueueService.create(this.__config, this.__logger, AmqpClient));
-        this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
+        this.__queueService = tracer.trace(RabbitQueueService.create(this.__config, this.__logger, AmqpClient));
+        // this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
         await this.__queueService.initialize();
 
         // security service
@@ -77,7 +78,8 @@ describe('router-service-tests', (done) => {
 
     });
 
-    beforeEach('cleanup', async () => {
+    // comment this out if you want to see the test DB file
+    afterEach('data cleanup', async () => {
         try {
             fs.unlinkSync(this.__config.data.filename); // careful!
         } catch (err) {

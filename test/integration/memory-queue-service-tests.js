@@ -1,6 +1,5 @@
 const expect = require('expect.js');
-const RabbitQueueService = require('../../lib/services/rabbit-queue-service');
-const AmqpClient = require('amqplib');
+const MemoryQueueService = require('../../lib/services/memory-queue-service');
 
 describe('rabbit-queue-tests', async () => {
 
@@ -22,7 +21,7 @@ describe('rabbit-queue-tests', async () => {
         }
 
         //config, logger, amqpClient
-        this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
+        this.__queueService = MemoryQueueService.create(this.__config, this.__logger);
         await this.__queueService.initialize();
 
         // this is changed in each test
@@ -41,23 +40,13 @@ describe('rabbit-queue-tests', async () => {
         await this.__queueService.stop();
     });
 
-    it('successfully starts a queue', async () => {
-
-        try {
-            await this.__queueService.startQueue(this.__queueName);
-        } catch (err) {
-            console.log(err)
-            throw err;
-        }
-    });
-
     it('successfully adds and pops an item on a queue', (done) => {
 
-        let testMessage = JSON.stringify({ name: 'Widget' });
+        let testMessage = { name: 'Widget' };
 
         this.__testContext = (channel, msg) => {
 
-            let result = msg.content.toString();
+            let result = msg.content;
 
             try {
                 expect(result).to.equal(testMessage);
@@ -67,14 +56,15 @@ describe('rabbit-queue-tests', async () => {
             }
         }
 
+        // add message to the queue
         this.__queueService.add(this.__queueName, testMessage);
 
     });
 
     it('successfully pops items in the correct sequence', (done) => {
 
-        let testMessage1 = JSON.stringify({ name: 'Widget1' });
-        let testMessage2 = JSON.stringify({ name: 'Widget2' });
+        let testMessage1 = { name: 'Widget1' };
+        let testMessage2 = { name: 'Widget2' };
 
         let msgCount = 0;
 
@@ -82,7 +72,7 @@ describe('rabbit-queue-tests', async () => {
 
             msgCount += 1;
 
-            let result = msg.content.toString();
+            let result = msg.content;
 
             try {
                 switch (msgCount) {
