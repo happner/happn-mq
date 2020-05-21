@@ -22,9 +22,12 @@ describe('memory-queue-service-tests', function () {
     after('stop', async () => {
     });
 
-    it('successfully add items to a queue and subsequently acknowledge them', () => {
+    it('successfully add items to a queue and subsequently acknowledges them', () => {
 
         return new Promise((resolve, reject) => {
+
+            // system under test
+            let queueService = QueueService.create({}, this.__logger);
 
             let testMsg1 = { testId: '1' };
             let testMsg2 = { testId: '2' };
@@ -36,15 +39,17 @@ describe('memory-queue-service-tests', function () {
             let testQueue = 'TEST_QUEUE';
 
             // the service will raise events of its own to indicate an ack - useful for tests
-            let msgAckedHandler = (eventObj) => {
+            let msgAckedHandler = async (eventObj) => {
                 msgCount += 1;
 
                 // the ack events should have been received in order - these will therefore match the ids
                 expect(eventObj.content.testId).to.equal(msgCount.toString());
                 expect(eventObj.status).to.equal('acked');
 
-                if (msgCount === 4)
+                if (msgCount === 4) {
+                    await queueService.stop();
                     resolve();
+                }
             };
 
             let setup = async () => {
@@ -57,8 +62,6 @@ describe('memory-queue-service-tests', function () {
                     }, 1000)
                 };
 
-                // system under test
-                let queueService = QueueService.create({}, this.__logger);
                 await queueService.initialize();
                 await queueService.startQueue(testQueue);
                 await queueService.setHandler(testQueue, handler);
@@ -98,6 +101,42 @@ describe('memory-queue-service-tests', function () {
                 expect(newQueue.items[1].status).to.equal('new');
                 expect(newQueue.items[2].status).to.equal('new');
                 expect(newQueue.items[3].status).to.equal('processing');
+            }
+
+            setup()
+                .then(() => { })
+                .catch(err => {
+                    return reject(err);
+                });
+        });
+    });
+
+    it('successfully logs a warning if no queue handler present', () => {
+
+        return new Promise((resolve, reject) => {
+
+            let testQueue = 'TEST_QUEUE';
+
+            this.__logger.warn =
+                (msg, obj) => {
+                    if (!obj) console.warn(msg); else console.warn(msg, obj);
+                    expect(msg).to.equal(`No handlers set up for queue ${testQueue}!`);
+                    resolve();
+                }
+
+            // system under test
+            let queueService = QueueService.create({}, this.__logger);
+
+            let setup = async () => {
+
+                await queueService.initialize();
+                await queueService.start();
+                await queueService.startQueue(testQueue);
+
+                // queue handler is null in this
+                await queueService.setHandler(testQueue, null);
+
+                await queueService.add(testQueue, { testId: '1' });
             }
 
             setup()
