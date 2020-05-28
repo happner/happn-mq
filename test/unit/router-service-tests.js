@@ -1,7 +1,7 @@
 const expect = require('expect.js');
 const Mocker = require('mini-mock');
 
-const QueueService = require('../../lib/services/rabbit-queue-service');
+const QueueService = require('../../lib/services/queues/fifo/rabbit-queue-service');
 const RouterService = require('../../lib/services/router-service');
 const SecurityService = require('../../lib/services/security-service');
 const ActionService = require('../../lib/services/actions/base-action');

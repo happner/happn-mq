@@ -25,10 +25,10 @@ describe('nedb-data-service-tests', function () {
     after('stop', async () => {
     });
 
-    it('successfully upserts data with path and NO options', async () => {
+    it('successfully stores data with path and NO options', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('findOne', [null, null])
             .withAsyncStub('update', [null, {}])
             .create();
 
@@ -38,19 +38,21 @@ describe('nedb-data-service-tests', function () {
         const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
-            path: '/test',
-            data: { testKey: 'testValue' }
+            request: {
+                path: '/test',
+                data: { testKey: 'testValue' }
+            }
         };
 
-        let result = await dataService.upsert(testMsg);
-        expect(result.data).to.equal(testMsg.data);
+        let result = await dataService.processStore(testMsg);
+        expect(result.response.data).to.equal(testMsg.request.data);
 
     });
 
     it('successfully upserts data with path and options', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('findOne', [null, null])
             .withAsyncStub('update', [null, {}])
             .create();
 
@@ -60,34 +62,36 @@ describe('nedb-data-service-tests', function () {
         const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
-            path: '/test',
-            data: {
-                data:
-                {
-                    property1: 'property1',
-                    property2: 'property2',
-                    property3: 'property3'
+            request: {
+                path: '/test',
+                data: {
+                    data:
+                    {
+                        property1: 'property1',
+                        property2: 'property2',
+                        property3: 'property3'
+                    },
+                    _meta: { path: '/test' }
                 },
-                _meta: { path: '/test' }
-            },
-            options: {
-                noPublish: true,
-                merge: true,
-                timeout: 60000,
-                upsertType: 2,
-                upsert: true
+                options: {
+                    noPublish: true,
+                    merge: true,
+                    timeout: 60000,
+                    upsertType: 2,
+                    upsert: true
+                }
             }
         };
 
-        let result = await dataService.upsert(testMsg);
-        expect(result.data).to.equal(testMsg.data);
+        let result = await dataService.processStore(testMsg);
+        expect(result.response.data).to.equal(testMsg.request.data);
 
     });
 
     it('successfully upserts data as a sibling', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('findOne', [null, null])
             .withAsyncStub('update', [null, {}])
             .create();
 
@@ -97,23 +101,26 @@ describe('nedb-data-service-tests', function () {
         const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
-            path: '/test',
-            data: { testKey: 'testValue' },
-            options: {
-                set_type: 'sibling'
+            request: {
+                path: '/test',
+                data: { testKey: 'testValue' },
+                options: {
+                    set_type: 'sibling'
+                }
             }
         };
 
-        let result = await dataService.upsert(testMsg);
-        expect(result.data).to.equal(testMsg.data);
-        expect(result._meta.path.split('/').length).to.equal(3);    // path should look something like: '/test/R39Nn_2hSnmrAtSta_VI9g-0'
+        let result = await dataService.processStore(testMsg);
+        console.log(result);
+        expect(result.response.data).to.equal(testMsg.request.data);
+        expect(result.response._meta.path.split('/').length).to.equal(3);    // path should look something like: '/test/R39Nn_2hSnmrAtSta_VI9g-0'
 
     });
 
     it('successfully upserts a tag', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('findOne', [null, null])
             .withAsyncStub('update', [null, {}])
             .create();
 
@@ -123,22 +130,24 @@ describe('nedb-data-service-tests', function () {
         const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
-            path: '/test',
-            options: {
-                tag: 'test_tag'
+            request: {
+                path: '/test',
+                options: {
+                    tag: 'test_tag'
+                }
             }
         };
 
-        let result = await dataService.upsert(testMsg);
-        expect(result.data).to.eql({});
-        expect(result._meta.path.split('/').length).to.equal(2);    // path should look something like: '/test/R39Nn_2hSnmrAtSta_VI9g-0'
+        let result = await dataService.processStore(testMsg);
+        expect(result.response.data).to.eql({});
+        expect(result.response._meta.path.split('/').length).to.equal(2);    // path should look something like: '/test/R39Nn_2hSnmrAtSta_VI9g-0'
 
     });
 
     it('throws an error if no data or path', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('findOne', [null, null])
             .withAsyncStub('update', [null, {}])
             .create();
 
@@ -147,10 +156,10 @@ describe('nedb-data-service-tests', function () {
         // system under test
         const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
-        let testMsg = {};
+        let testMsg = { request: {} };
 
         try {
-            await dataService.upsert(testMsg);
+            await dataService.processStore(testMsg);
         } catch (err) {
             expect(err.message).to.equal('No path defined; No data defined');
         }
@@ -160,7 +169,7 @@ describe('nedb-data-service-tests', function () {
     it('throws an error if data and tag present in same payload', async () => {
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', [null, {}])
+            .withAsyncStub('findOne', [null, null])
             .withAsyncStub('update', [null, {}])
             .create();
 
@@ -170,15 +179,17 @@ describe('nedb-data-service-tests', function () {
         const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
 
         let testMsg = {
-            data: { testKey: 'testValue' },
-            path: '/test',
-            options: {
-                tag: 'test_tag'
+            request: {
+                data: { testKey: 'testValue' },
+                path: '/test',
+                options: {
+                    tag: 'test_tag'
+                }
             }
         };
 
         try {
-            await dataService.upsert(testMsg);
+            await dataService.processStore(testMsg);
         } catch (err) {
             expect(err.message).to.equal('Cannot set tag with new data.');
         }
@@ -187,94 +198,87 @@ describe('nedb-data-service-tests', function () {
 
     it('successfully merges data', async () => {
 
-        let updatedTimeStamp = Date.now();
+        let initialTimeStamp = Date.now();
 
-        let initial = {
-            e: null,
-            response: 1,
-            created:
-            {
-                _id: '/merge/6712s1MCG',
-                data: { test: 'data' },
-                path: '/merge/6712s1MCG',
-                created: 1588589116078,
-                modified: 1588589116078
-            },
-            upsert: true,
-            meta:
-            {
-                created: 1588589116078,
-                modified: 1588589116078,
-                modifiedBy: undefined,
-                path: '/merge/6712s1MCG',
-                _id: '/merge/6712s1MCG'
-            }
+        // assumes that an initial set was done on path '/merge/6712s1MCG' with data: { test: 'data' },
+        let dbFindOneResult = {
+            _id: '/merge/6712s1MCG',
+            data: { test: 'data' },
+            path: '/merge/6712s1MCG',
+            created: initialTimeStamp,
+            modified: initialTimeStamp
         };
 
-        let updated = {
+        let updatedTimeStamp = initialTimeStamp + 10;
+
+        // the result of an update of existing path being done on nedb 
+        let dbUpdateResult = {
             e: null,
             response: 1,
             created: undefined,
-            upsert: undefined,
+            upserted: undefined,
             meta:
             {
-                created: 1588589116078,
-                modified: 1588589117087,
+                created: initialTimeStamp,
+                modified: updatedTimeStamp,
                 _id: '/merge/6712s1MCG',
                 path: '/merge/6712s1MCG'
             }
         }
 
         const mockNedb = this.__mocker.mock(Nedb.prototype)
-            .withAsyncStub('findOne', [null, initial])
-            .withAsyncStub('update', [null, updated])
+            .withAsyncStub('findOne', [null, dbFindOneResult])
+            .withAsyncStub('update', [null, dbUpdateResult])
             .create();
 
         const utils = new Utils();
 
-        // system under test
-        // const dataService = this.__utils.traceMethodCalls(DataService.create(this.__config, this.__logger, mockNedb, utils));
-        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
-
+        // test payload for a second set request (with merge=true) on path '/merge/6712s1MCG', which should merge the data with a previous set's data..
         let msg = {
-            data: { testKey: 'testValue', testKey2: 'testKey2Value' },
-            path: '/merge/6712s1MCG',
-            options: {
-                merge: true
+            request: {
+                data: { testKey: 'testValue', testKey2: 'testKey2Value' },
+                path: '/merge/6712s1MCG',
+                options: {
+                    merge: true
+                }
             }
         };
 
-        let result = {
-            data: { testKey: 'testValue', testKey2: 'testKey2Value' },
+        // const dataService = this.__utils.traceMethodCalls(DataService.create(this.__config, this.__logger, mockNedb, utils));
+        const dataService = DataService.create(this.__config, this.__logger, mockNedb, utils);
+
+        // system under test
+        let stored = await dataService.processStore(msg);
+
+        // expectations...
+        let expectedResponse = {
+            data: { testKey: 'testValue', testKey2: 'testKey2Value', test: 'data' },
             _meta:
             {
                 created: undefined,
                 modified: undefined,
                 modifiedBy: undefined,
                 path: '/merge/6712s1MCG',
-                _id: undefined
+                _id: '/merge/6712s1MCG'
             },
             response:
             {
                 e: null,
                 response: 1,
                 created: undefined,
-                upsert: undefined,
+                upserted: undefined,
                 meta:
                 {
-                    created: 1588589116078,
-                    modified: 1588589117087,
+                    created: initialTimeStamp,
+                    modified: updatedTimeStamp,
                     _id: '/merge/6712s1MCG',
                     path: '/merge/6712s1MCG'
                 }
             }
         };
 
-        let upserted = await dataService.upsert(msg);
-        // expect(upserted).to.equal(updated);
+        expect(stored.response).to.eql(expectedResponse);
 
     });
-
-    // TODO: merge
 
 })

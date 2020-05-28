@@ -1,5 +1,5 @@
 const expect = require('expect.js');
-const MemoryQueueService = require('../../lib/services/memory-queue-service');
+const MemoryQueueService = require('../../lib/services/queues/fifo/memory-queue-service');
 
 describe('rabbit-queue-tests', async () => {
 

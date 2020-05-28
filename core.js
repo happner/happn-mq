@@ -52,18 +52,19 @@ module.exports = class Core {
         this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedb, this.__utils);
         this.__queueProvider = QueueServiceProvider.create(this.__config, this.__logger);
         this.__dataServiceProvider = DataServiceProvider.create(this.__config, this.__logger, this.__nedbDataService, this.__utils);
-        this.__queueService = this.__queueProvider.getQueueService();
+        this.__fifoQueueService = this.__queueProvider.getFifoQueueService();
+        this.__topicQueueService = this.__queueProvider.getTopicQueueService();
         this.__dataService = this.__dataServiceProvider.getDataService();
         this.__securityService = SecurityService.create(this.__config, this.__logger);
 
         // actions
-        let describeAction = new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__queueService, this.__utils);
-        let loginAction = new (require(`./lib/services/actions/login`))(this.__config, this.__logger, this.__queueService, this.__securityService, this.__utils);
-        let getAction = new (require(`./lib/services/actions/get`))(this.__config, this.__logger, this.__queueService, this.__utils);
-        let offAction = new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__queueService, this.__utils);
-        let onAction = new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__queueService, this.__utils);
-        let removeAction = new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__queueService, this.__utils);
-        let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils);
+        let describeAction = new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let loginAction = new (require(`./lib/services/actions/login`))(this.__config, this.__logger, this.__fifoQueueService, this.__securityService, this.__utils);
+        let getAction = new (require(`./lib/services/actions/get`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let offAction = new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let onAction = new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let removeAction = new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__fifoQueueService, this.__dataService, this.__utils);
 
         this.__actions = {
             describeAction, loginAction, getAction, offAction, onAction, removeAction, setAction
@@ -71,7 +72,7 @@ module.exports = class Core {
 
         this.__actionServiceFactory = ActionServiceFactory.create(this.__config, this.__logger, this.__actions);
         // this.__routerService = this.__setupTracing(RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
-        this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
+        this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__fifoQueueService, this.__securityService, this.__actionServiceFactory);
     }
 
     static create() {
@@ -83,11 +84,11 @@ module.exports = class Core {
         this.__logger.info('Initializing core.....');
 
         // set up the queue service
-        await this.__queueService.initialize();
+        await this.__fifoQueueService.initialize();
 
         // start the queues
         for (let queue of this.__config.queues) {
-            this.__queueService.startQueue(queue.name);
+            this.__fifoQueueService.startQueue(queue.name);
         }
 
         // set up the router service
@@ -104,21 +105,21 @@ module.exports = class Core {
     // this is invoked by happn-3's session service 
     async processInboundMessage(msg) {
         // console.log('Adding to inbound queue.....');
-        await this.__queueService.add('HAPPN_WORKER_IN', msg);
+        await this.__fifoQueueService.add('HAPPN_WORKER_IN', msg);
     }
 
     // set by happn-3 so that the session service can respond to the client
     async setOutboundWorkerQueueHandler(handler) {
         // console.log('Binding handler to outbound worker queue.....');
         let queueName = this.__findQueueNameByType('worker_out');
-        await this.__queueService.setHandler(queueName, handler);
+        await this.__fifoQueueService.setHandler(queueName, handler);
     }
 
     // set by happn-3 so that the session service can respond to the client
     async setOutboundPubsubQueueHandler(handler) {
         // console.log('Binding handler to outbound pubsub queue.....');
         let queueName = this.__findQueueNameByType('pubsub_out');
-        await this.__queueService.setHandler(queueName, handler);
+        await this.__fifoQueueService.setHandler(queueName, handler);
     }
 
     __findQueueNameByType(type) {

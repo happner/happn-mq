@@ -1,5 +1,5 @@
 const expect = require('expect.js');
-const RabbitQueueService = require('../../lib/services/rabbit-queue-service');
+const RabbitQueueService = require('../../lib/services/queues/fifo/rabbit-queue-service');
 const AmqpClient = require('amqplib');
 
 describe('rabbit-queue-tests', async () => {
