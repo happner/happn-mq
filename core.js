@@ -5,9 +5,11 @@ const Utils = require('./lib/utils/utils');
 const QueueServiceProvider = require('./lib/providers/queue-service-provider');
 const SecurityService = require('./lib/services/security-service');
 const DataServiceProvider = require('./lib/providers/data-service-provider');
-const DataService = require('./lib/services/nedb-data-service');
+const DataService = require('./lib/services/data/nedb-data-service');
+const NedbRepository = require('./lib/repositories/nedb-repository');
 const RouterService = require('./lib/services/router-service');
 const ActionServiceFactory = require('./lib/factories/action-service-factory');
+const setResultBuilder = require('./lib/builders/upsert-builder');
 
 // The main entry point
 module.exports = class Core {
@@ -48,10 +50,12 @@ module.exports = class Core {
         // these dependencies will be handled by DI
         this.__utils = Utils.create();
         this.__nedb = new Nedb(this.__config.data);
+
         // this.__nedbDataService = this.__setupTracing(DataService.create(this.__config, this.__logger, this.__nedb, this.__utils));
-        this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedb, this.__utils);
+        this.__nedbRespository = NedbRepository.create(this.__nedb);
+        this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedbRespository, this.__utils);
         this.__queueProvider = QueueServiceProvider.create(this.__config, this.__logger);
-        this.__dataServiceProvider = DataServiceProvider.create(this.__config, this.__logger, this.__nedbDataService, this.__utils);
+        this.__dataServiceProvider = DataServiceProvider.create(this.__config, this.__logger, this.__nedbDataService, this.__utils, setResultBuilder);
         this.__fifoQueueService = this.__queueProvider.getFifoQueueService();
         this.__topicQueueService = this.__queueProvider.getTopicQueueService();
         this.__dataService = this.__dataServiceProvider.getDataService();

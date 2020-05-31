@@ -1,7 +1,6 @@
 const expect = require('expect.js');
-const Mocker = require('mini-mock');
 
-const SetResultBuilder = require('../../lib/builders/set-result-builder');
+const SetResultBuilder = require('../../../lib/builders/set-result-builder');
 
 describe('set-results-builder-tests', async () => {
 

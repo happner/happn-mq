@@ -5,12 +5,14 @@ const AmqpClient = require('amqplib');
 const { v4: uuidv4 } = require('uuid');
 const Nedb = require('happn-nedb');
 const RabbitQueueService = require('../../lib/services/queues/fifo/rabbit-queue-service');
-// const MemoryQueueService = require('../../lib/services/memory-queue-service');
+// const MemoryQueueService = require('../../lib/services/queues/fifo/memory-queue-service');
 const RouterService = require('../../lib/services/router-service');
 const SecurityService = require('../../lib/services/security-service');
 const ActionServiceFactory = require('../../lib/factories/action-service-factory');
-const NedbDataService = require('../../lib/services/nedb-data-service');
+const NedbDataService = require('../../lib/services/data/nedb-data-service');
+const NedbRepository = require('../../lib/repositories/nedb-repository')
 const Utils = require('../../lib/utils/utils');
+const upsertBuilder = require('../../lib/builders/upsert-builder');
 
 describe('router-service-tests', (done) => {
 
@@ -48,6 +50,7 @@ describe('router-service-tests', (done) => {
         // queue service
         // this.__queueService = tracer.trace(RabbitQueueService.create(this.__config, this.__logger, AmqpClient));
         this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
+        // this.__queueService = MemoryQueueService.create(this.__config, this.__logger, AmqpClient);
         await this.__queueService.initialize();
 
         // security service
@@ -55,8 +58,9 @@ describe('router-service-tests', (done) => {
 
         // nedb
         let nedb = new Nedb(this.__config.data);
+        let nedbRepository = NedbRepository.create(nedb);
         // this.__dataService = tracer.trace(NedbDataService.create(this.__config, this.__logger, nedb, this.__utils));
-        this.__dataService = NedbDataService.create(this.__config, this.__logger, nedb, this.__utils);
+        this.__dataService = NedbDataService.create(this.__config, this.__logger, nedbRepository, this.__utils, upsertBuilder);
 
         // actions
         // let setAction = tracer.trace(new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils));
@@ -107,6 +111,8 @@ describe('router-service-tests', (done) => {
         let testMsg = getBaseSetMsg(testData);
 
         this.__queueService.on('itemAdded', (eventObj) => {
+
+            console.log('RESULT: ', eventObj.item);
 
             if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
                 let outboundMsg = eventObj.item;
@@ -159,6 +165,9 @@ describe('router-service-tests', (done) => {
                 msgCount += 1;
 
                 if (msgCount === 2) {
+
+                    console.log('RESULT: ', eventObj.item);
+
                     let outboundMsg = eventObj.item;
                     expect(outboundMsg.response.data).to.eql(expectedResponseData);
                     done();
@@ -208,12 +217,58 @@ describe('router-service-tests', (done) => {
                 if (msgCount === 2) {
                     let outboundMsg = eventObj.item;
 
+                    console.log('RESULT: ', outboundMsg);
+
                     expect(outboundMsg.response.data).to.eql(expectedResponseData);
 
                     // check that the path has been appended with a random id
                     let pathLen = finalMsg.raw.path.split('/').length;
                     let storedPathLen = outboundMsg.response._meta.path.split('/').length;
                     expect(storedPathLen).to.equal(pathLen + 1);
+
+                    done();
+                }
+            }
+        })
+
+        this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
+        this.__queueService.add('HAPPN_WORKER_IN', finalMsg);
+    });
+
+    // TODO - look at the happn-3 process of handling tags (there is a LOT more to this!):
+    // processStore -> upsert -> __upsertInternal -> insertTag
+    xit('successfully handles a SET message with TAG option', (done) => {
+
+        // initial 
+
+        let initialData = {
+            property1: 'property1',
+            property2: 'property2',
+            property3: 'property3'
+        };
+
+        let initialMsg = getBaseSetMsg(initialData);
+
+        // final
+
+        let finalMsg = getBaseSetMsg(null, false, false, false, false, true);
+
+        console.log('FINAL MESSAGE: ', finalMsg)
+
+        let msgCount = 0;
+
+        this.__queueService.on('itemAdded', (eventObj) => {
+
+            if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
+
+                msgCount += 1;
+
+                if (msgCount === 2) {
+                    let outboundMsg = eventObj.item;
+
+                    console.log('RESULT: ', outboundMsg);
+
+                    // expect(outboundMsg.response.data).to.eql(expectedResponseData);
 
                     done();
                 }
@@ -255,7 +310,7 @@ describe('router-service-tests', (done) => {
      HELPERS
      */
 
-    function getBaseSetMsg(data, isNewSession = false, isPublish = false, isMerge = false, isSibling = false) {
+    function getBaseSetMsg(data, isNewSession = false, isPublish = false, isMerge = false, isSibling = false, isTag = false) {
 
         let uuid = isNewSession ? uuidv4() : 'ba27b60a-6074-447c-ac86-024835500eb0';
 
@@ -269,15 +324,29 @@ describe('router-service-tests', (done) => {
             options.set_type = 'sibling';
         }
 
+        if (isTag) {
+            options.tag = 'test_tag'
+        }
+
+        let raw = {
+            action: 'set',
+            eventId: 6,
+            path: 'test1/testset/data',
+            sessionId: uuid,
+            options: options
+        }
+
+        let request = {
+            sessionId: uuid
+        }
+
+        if (!isTag) {
+            raw.data = data;
+            request.data = data;
+        }
+
         return {
-            raw: {
-                action: 'set',
-                eventId: 6,
-                path: 'test1/testset/data',
-                data: data,
-                sessionId: uuid,
-                options: options
-            },
+            raw: raw,
             session: {
                 id: uuid,
                 protocol: 'happn_4',
@@ -290,10 +359,7 @@ describe('router-service-tests', (done) => {
                 }
             },
             id: 6,
-            request: {
-                sessionId: uuid,
-                data: data
-            }
+            request: request
         }
     }
 })
