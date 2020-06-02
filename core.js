@@ -9,7 +9,8 @@ const DataService = require('./lib/services/data/nedb-data-service');
 const NedbRepository = require('./lib/repositories/nedb-repository');
 const RouterService = require('./lib/services/router-service');
 const ActionServiceFactory = require('./lib/factories/action-service-factory');
-const setResultBuilder = require('./lib/builders/upsert-builder');
+const setResultBuilder = require('./lib/builders/set-result-builder');
+const upsertBuilder = require('./lib/builders/upsert-builder');
 
 // The main entry point
 module.exports = class Core {
@@ -38,6 +39,8 @@ module.exports = class Core {
             password: process.env['RABBITMQ_PASSWORD']
         };
 
+        console.log('HAPPN-MQ CONFIG: ', this.__config);
+
         this.__logger = {
             info: (msg, obj) => { if (!obj) console.info(msg); else console.info(msg, obj); },
             warn: (msg, obj) => { if (!obj) console.warn(msg); else console.warn(msg, obj); },
@@ -53,9 +56,9 @@ module.exports = class Core {
 
         // this.__nedbDataService = this.__setupTracing(DataService.create(this.__config, this.__logger, this.__nedb, this.__utils));
         this.__nedbRespository = NedbRepository.create(this.__nedb);
-        this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedbRespository, this.__utils);
+        this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedbRespository, this.__utils, upsertBuilder);
         this.__queueProvider = QueueServiceProvider.create(this.__config, this.__logger);
-        this.__dataServiceProvider = DataServiceProvider.create(this.__config, this.__logger, this.__nedbDataService, this.__utils, setResultBuilder);
+        this.__dataServiceProvider = DataServiceProvider.create(this.__config, this.__logger, this.__nedbDataService, this.__utils);
         this.__fifoQueueService = this.__queueProvider.getFifoQueueService();
         this.__topicQueueService = this.__queueProvider.getTopicQueueService();
         this.__dataService = this.__dataServiceProvider.getDataService();
@@ -79,8 +82,8 @@ module.exports = class Core {
         this.__routerService = RouterService.create(this.__config.happnMq, this.__logger, this.__fifoQueueService, this.__securityService, this.__actionServiceFactory);
     }
 
-    static create() {
-        return new Core();
+    static create(config) {
+        return new Core(config);
     }
 
     async initialize() {
@@ -116,6 +119,7 @@ module.exports = class Core {
     async setOutboundWorkerQueueHandler(handler) {
         // console.log('Binding handler to outbound worker queue.....');
         let queueName = this.__findQueueNameByType('worker_out');
+        console.log('OUTBOUND QUEUE: ', queueName);
         await this.__fifoQueueService.setHandler(queueName, handler);
     }
 
