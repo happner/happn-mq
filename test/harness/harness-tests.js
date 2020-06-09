@@ -23,10 +23,10 @@ describe('harness-tests', async () => {
         let harness = new Happn3Harness();
         await harness.initialise();
 
-        let result1 = await harness.sendMessage('test1/testsubscribe/data/', { property1: 'property1', property2: 'property2', property3: 'property3' }, { noPublish: true, merge: false });
+        let result1 = await harness.sendSetMessage('test1/testsubscribe/data/', { property1: 'property1', property2: 'property2', property3: 'property3' }, { noPublish: true, merge: false });
         console.log('RESULT 1: ', result1);
 
-        let result2 = await harness.sendMessage('test1/testsubscribe/data/', { property4: 'property4' }, { noPublish: true, merge: true });
+        let result2 = await harness.sendSetMessage('test1/testsubscribe/data/', { property4: 'property4' }, { noPublish: true, merge: true });
         console.log('RESULT 2: ', result2);
 
         // expect(result1).to.eql({ property1: 'property1', property2: 'property2', property3: 'property3' });

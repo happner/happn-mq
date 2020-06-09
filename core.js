@@ -1,10 +1,12 @@
 
 const Xpozr = require('xpozr');
 const Nedb = require('happn-nedb');
+const AmqpClient = require('amqplib');
 const Utils = require('./lib/utils/utils');
-const QueueServiceProvider = require('./lib/providers/queue-service-provider');
+const CoreRabbitService = require('./lib/services/queues/core-rabbit-service');
+const QueueServiceFactory = require('./lib/factories/queue-service-factory');
 const SecurityService = require('./lib/services/security-service');
-const DataServiceProvider = require('./lib/providers/data-service-provider');
+const DataServiceFactory = require('./lib/factories/data-service-factory');
 const DataService = require('./lib/services/data/nedb-data-service');
 const NedbRepository = require('./lib/repositories/nedb-repository');
 const RouterService = require('./lib/services/router-service');
@@ -55,13 +57,14 @@ module.exports = class Core {
         this.__nedb = new Nedb(this.__config.data);
 
         // this.__nedbDataService = this.__setupTracing(DataService.create(this.__config, this.__logger, this.__nedb, this.__utils));
-        this.__nedbRespository = NedbRepository.create(this.__nedb);
-        this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedbRespository, this.__utils, upsertBuilder);
-        this.__queueProvider = QueueServiceProvider.create(this.__config, this.__logger);
-        this.__dataServiceProvider = DataServiceProvider.create(this.__config, this.__logger, this.__nedbDataService, this.__utils);
-        this.__fifoQueueService = this.__queueProvider.getFifoQueueService();
-        this.__topicQueueService = this.__queueProvider.getTopicQueueService();
-        this.__dataService = this.__dataServiceProvider.getDataService();
+        this.__nedbRepository = NedbRepository.create(this.__nedb);
+        this.__nedbDataService = DataService.create(this.__config, this.__logger, this.__nedbRepository, this.__utils, upsertBuilder);
+        this.__dataServiceFactory = DataServiceFactory.create(this.__config, this.__logger, this.__nedbDataService, this.__utils);
+        this.__coreRabbitService = CoreRabbitService.create(this.__config, this.__logger, AmqpClient);
+        this.__queueServiceFactory = QueueServiceFactory.create(this.__config, this.__logger, this.__coreRabbitService);
+        this.__fifoQueueService = this.__queueServiceFactory.getFifoQueueService();
+        this.__topicQueueService = this.__queueServiceFactory.getTopicQueueService();
+        this.__dataService = this.__dataServiceFactory.getDataService();
         this.__securityService = SecurityService.create(this.__config, this.__logger);
 
         // actions
@@ -91,7 +94,7 @@ module.exports = class Core {
         this.__logger.info('Initializing core.....');
 
         // set up the queue service
-        await this.__fifoQueueService.initialize();
+        await this.__coreRabbitService.initialize();
 
         // start the queues
         for (let queue of this.__config.queues) {

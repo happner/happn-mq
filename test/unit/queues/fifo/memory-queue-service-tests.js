@@ -3,7 +3,7 @@ const Mocker = require('mini-mock');
 
 const QueueService = require('../../../../lib/services/queues/fifo/memory-queue-service');
 
-describe('memory-queue-service-tests', function () {
+describe('memory-fifo-queue-service-tests', function () {
 
     this.timeout(20000);
 

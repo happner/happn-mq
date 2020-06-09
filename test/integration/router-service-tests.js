@@ -4,7 +4,8 @@ const expect = require('expect.js');
 const AmqpClient = require('amqplib');
 const { v4: uuidv4 } = require('uuid');
 const Nedb = require('happn-nedb');
-const RabbitQueueService = require('../../lib/services/queues/fifo/rabbit-queue-service');
+const CoreRabbitService = require('../../lib/services/queues/core-rabbit-service');
+const RabbitFifoQueueService = require('../../lib/services/queues/fifo/rabbit-queue-service');
 // const MemoryQueueService = require('../../lib/services/queues/fifo/memory-queue-service');
 const RouterService = require('../../lib/services/router-service');
 const SecurityService = require('../../lib/services/security-service');
@@ -14,7 +15,9 @@ const NedbRepository = require('../../lib/repositories/nedb-repository')
 const Utils = require('../../lib/utils/utils');
 const upsertBuilder = require('../../lib/builders/upsert-builder');
 
-describe('router-service-tests', (done) => {
+describe('router-service-tests', function (done) {
+
+    this.timeout(20000);
 
     before('setup', async () => {
 
@@ -49,9 +52,10 @@ describe('router-service-tests', (done) => {
 
         // queue service
         // this.__queueService = tracer.trace(RabbitQueueService.create(this.__config, this.__logger, AmqpClient));
-        this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
+        this.__coreRabbitService = CoreRabbitService.create(this.__config, this.__logger, AmqpClient);
+        this.__rabbitFifoQueueService = RabbitFifoQueueService.create(this.__config, this.__logger, this.__coreRabbitService);
         // this.__queueService = MemoryQueueService.create(this.__config, this.__logger, AmqpClient);
-        await this.__queueService.initialize();
+        await this.__coreRabbitService.initialize();
 
         // security service
         this.__securityService = SecurityService.create(this.__config, this.__logger);
@@ -64,7 +68,7 @@ describe('router-service-tests', (done) => {
 
         // actions
         // let setAction = tracer.trace(new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils));
-        let setAction = new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils);
+        let setAction = new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__rabbitFifoQueueService, this.__dataService, this.__utils);
         this.__actions = { setAction };
 
         // action factory
@@ -72,12 +76,12 @@ describe('router-service-tests', (done) => {
 
         // start the queues
         for (let queue of this.__config.queues) {
-            this.__queueService.startQueue(queue.name);
+            this.__rabbitFifoQueueService.startQueue(queue.name);
         }
 
         // SYSTEM UNDER TEST
         // this.__routerService = tracer.trace(RouterService.create(this.__config, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
-        this.__routerService = RouterService.create(this.__config, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory);
+        this.__routerService = RouterService.create(this.__config, this.__logger, this.__rabbitFifoQueueService, this.__securityService, this.__actionServiceFactory);
         await this.__routerService.start();
 
     });
@@ -92,14 +96,14 @@ describe('router-service-tests', (done) => {
     });
 
     after('stop', async () => {
-        await this.__queueService.stop();
+        await this.__coreRabbitService.stop();
     });
 
     afterEach('listener cleanup', async () => {
-        this.__queueService.removeAllListeners('itemAdded');
+        this.__coreRabbitService.removeAllListeners('itemAdded');
     });
 
-    it('successfully handles SET message on inbound queue and adds response to outbound queue', (done) => {
+    it.only('successfully handles SET message on inbound queue and adds response to outbound queue', (done) => {
 
         let testData = {
             property1: 'property1',
@@ -110,7 +114,7 @@ describe('router-service-tests', (done) => {
         // test SET message
         let testMsg = getBaseSetMsg(testData);
 
-        this.__queueService.on('itemAdded', (eventObj) => {
+        this.__coreRabbitService.on('itemAdded', (eventObj) => {
 
             console.log('RESULT: ', eventObj.item);
 
@@ -122,7 +126,7 @@ describe('router-service-tests', (done) => {
         })
 
         // add this to the inbound queue
-        this.__queueService.add('HAPPN_WORKER_IN', testMsg);
+        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', testMsg);
 
     });
 
@@ -158,7 +162,7 @@ describe('router-service-tests', (done) => {
 
         let msgCount = 0;
 
-        this.__queueService.on('itemAdded', (eventObj) => {
+        this.__coreRabbitService.on('itemAdded', (eventObj) => {
 
             if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
 
@@ -175,8 +179,8 @@ describe('router-service-tests', (done) => {
             }
         })
 
-        this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
-        this.__queueService.add('HAPPN_WORKER_IN', finalMsg);
+        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
+        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', finalMsg);
     });
 
     // creates an initial record; then adds additional record on same path as sibling
@@ -208,7 +212,7 @@ describe('router-service-tests', (done) => {
 
         let msgCount = 0;
 
-        this.__queueService.on('itemAdded', (eventObj) => {
+        this.__coreRabbitService.on('itemAdded', (eventObj) => {
 
             if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
 
@@ -231,8 +235,8 @@ describe('router-service-tests', (done) => {
             }
         })
 
-        this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
-        this.__queueService.add('HAPPN_WORKER_IN', finalMsg);
+        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
+        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', finalMsg);
     });
 
     // TODO - look at the happn-3 process of handling tags (there is a LOT more to this!):
@@ -257,7 +261,7 @@ describe('router-service-tests', (done) => {
 
         let msgCount = 0;
 
-        this.__queueService.on('itemAdded', (eventObj) => {
+        this.__coreRabbitService.on('itemAdded', (eventObj) => {
 
             if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
 
@@ -275,8 +279,8 @@ describe('router-service-tests', (done) => {
             }
         })
 
-        this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
-        this.__queueService.add('HAPPN_WORKER_IN', finalMsg);
+        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
+        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', finalMsg);
     });
 
     it('successfully handles a SET message and publishes on the pubsub queue', (done) => {
@@ -291,7 +295,7 @@ describe('router-service-tests', (done) => {
 
         let initialMsg = getBaseSetMsg(initialData, false, true, false, false);
 
-        this.__queueService.on('itemAdded', (eventObj) => {
+        this.__coreRabbitService.on('itemAdded', (eventObj) => {
 
             if (eventObj.queueName === 'HAPPN_PUBSUB_OUT') {
 
@@ -303,7 +307,7 @@ describe('router-service-tests', (done) => {
             }
         })
 
-        this.__queueService.add('HAPPN_WORKER_IN', initialMsg);
+        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
     });
 
     /*

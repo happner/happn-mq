@@ -11,6 +11,28 @@ module.exports = class Happn3Harness {
         await this.__createHappnClientInstance();
     }
 
+    sendSetMessage(path, data, options) {
+
+        return new Promise((resolve, reject) => {
+
+            this.__happnClient.set(path, data, options, function (e, result) {
+
+                if (e)
+                    return reject(e);
+
+                //your result object has a special _meta property (not enumerable) that contains its actual _id, path, created and modified dates
+                //so you get back {property1:'property1',property2:'property2',property3:'property3', _meta:{path:'e2e_test1/testsubscribe/data/', created:20151011893020}}
+
+                resolve(result);
+            });
+        });
+    }
+
+
+    /* 
+    HELPERS
+    */
+
     __createHappnServerInstance() {
 
         let self = this;
@@ -110,23 +132,6 @@ module.exports = class Happn3Harness {
                 });
 
                 resolve();
-            });
-        });
-    }
-
-    sendMessage(path, data, options) {
-
-        return new Promise((resolve, reject) => {
-
-            this.__happnClient.set(path, data, options, function (e, result) {
-
-                if (e)
-                    return reject(e);
-
-                //your result object has a special _meta property (not enumerable) that contains its actual _id, path, created and modified dates
-                //so you get back {property1:'property1',property2:'property2',property3:'property3', _meta:{path:'e2e_test1/testsubscribe/data/', created:20151011893020}}
-
-                resolve(result);
             });
         });
     }
