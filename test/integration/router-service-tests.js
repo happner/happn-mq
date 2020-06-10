@@ -28,7 +28,7 @@ describe('router-service-tests', function (done) {
             userName: process.env['RABBITMQ_USERNAME'],
             password: process.env['RABBITMQ_PASSWORD'],
             queues: [
-                { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
+                // { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
                 { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
                 { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
             ],
@@ -51,10 +51,8 @@ describe('router-service-tests', function (done) {
         this.__utils = Utils.create();
 
         // queue service
-        // this.__queueService = tracer.trace(RabbitQueueService.create(this.__config, this.__logger, AmqpClient));
         this.__coreRabbitService = CoreRabbitService.create(this.__config, this.__logger, AmqpClient);
         this.__rabbitFifoQueueService = RabbitFifoQueueService.create(this.__config, this.__logger, this.__coreRabbitService);
-        // this.__queueService = MemoryQueueService.create(this.__config, this.__logger, AmqpClient);
         await this.__coreRabbitService.initialize();
 
         // security service
@@ -63,11 +61,9 @@ describe('router-service-tests', function (done) {
         // nedb
         let nedb = new Nedb(this.__config.data);
         let nedbRepository = NedbRepository.create(nedb);
-        // this.__dataService = tracer.trace(NedbDataService.create(this.__config, this.__logger, nedb, this.__utils));
         this.__dataService = NedbDataService.create(this.__config, this.__logger, nedbRepository, this.__utils, upsertBuilder);
 
         // actions
-        // let setAction = tracer.trace(new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__queueService, this.__dataService, this.__utils));
         let setAction = new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__rabbitFifoQueueService, this.__dataService, this.__utils);
         this.__actions = { setAction };
 
@@ -80,10 +76,18 @@ describe('router-service-tests', function (done) {
         }
 
         // SYSTEM UNDER TEST
-        // this.__routerService = tracer.trace(RouterService.create(this.__config, this.__logger, this.__queueService, this.__securityService, this.__actionServiceFactory));
         this.__routerService = RouterService.create(this.__config, this.__logger, this.__rabbitFifoQueueService, this.__securityService, this.__actionServiceFactory);
-        await this.__routerService.start();
+        this.__routerService.start();
 
+        // TEST CONTEXT - used by the queue handler - this is changed in each test
+        this.__testContext = (channel, msg) => { };
+
+        const handler = (channel, msg) => {
+            // execute the test context func
+            this.__testContext(channel, msg);
+        };
+
+        this.__rabbitFifoQueueService.setHandler('HAPPN_WORKER_OUT', handler);
     });
 
     // comment this out if you want to see the test DB file
@@ -99,11 +103,7 @@ describe('router-service-tests', function (done) {
         await this.__coreRabbitService.stop();
     });
 
-    afterEach('listener cleanup', async () => {
-        this.__coreRabbitService.removeAllListeners('itemAdded');
-    });
-
-    it.only('successfully handles SET message on inbound queue and adds response to outbound queue', (done) => {
+    it('successfully handles SET message on inbound queue and adds response to outbound queue', (done) => {
 
         let testData = {
             property1: 'property1',
@@ -114,18 +114,21 @@ describe('router-service-tests', function (done) {
         // test SET message
         let testMsg = getBaseSetMsg(testData);
 
-        this.__coreRabbitService.on('itemAdded', (eventObj) => {
+        // handler for the outgoing fifo queue (once the router-service has finished processing)
+        this.__testContext = (channel, queueItem) => {
 
-            console.log('RESULT: ', eventObj.item);
+            try {
+                channel.ack(queueItem);
+                let msg = JSON.parse(queueItem.content);
+                expect(msg.path).to.eql(testMsg.path);
 
-            if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
-                let outboundMsg = eventObj.item;
-                expect(outboundMsg.response.data).to.eql(testData);
                 done();
+            } catch (err) {
+                done(err);
             }
-        })
+        }
 
-        // add this to the inbound queue
+        // add this to the inbound fifo queue - the router service will pick this up...
         this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', testMsg);
 
     });
@@ -162,23 +165,20 @@ describe('router-service-tests', function (done) {
 
         let msgCount = 0;
 
-        this.__coreRabbitService.on('itemAdded', (eventObj) => {
+        // handler for the outgoing fifo queue (once the router-service has finished processing)
+        this.__testContext = (channel, queueItem) => {
 
-            if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
+            channel.ack(queueItem);
+            msgCount += 1;
 
-                msgCount += 1;
-
-                if (msgCount === 2) {
-
-                    console.log('RESULT: ', eventObj.item);
-
-                    let outboundMsg = eventObj.item;
-                    expect(outboundMsg.response.data).to.eql(expectedResponseData);
-                    done();
-                }
+            if (msgCount === 2) {
+                let msg = JSON.parse(queueItem.content);
+                expect(msg.response.data).to.eql(expectedResponseData);
+                return done();
             }
-        })
+        }
 
+        // add test messages to incoming fifo queue
         this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
         this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', finalMsg);
     });
@@ -212,76 +212,73 @@ describe('router-service-tests', function (done) {
 
         let msgCount = 0;
 
-        this.__coreRabbitService.on('itemAdded', (eventObj) => {
+        // handler for the outgoing fifo queue (once the router-service has finished processing)
+        this.__testContext = (channel, queueItem) => {
 
-            if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
+            channel.ack(queueItem);
+            msgCount += 1;
 
-                msgCount += 1;
+            if (msgCount === 2) {
+                let msg = JSON.parse(queueItem.content);
+                expect(msg.response.data).to.eql(expectedResponseData);
 
-                if (msgCount === 2) {
-                    let outboundMsg = eventObj.item;
+                // check that the path has been appended with a random id
+                let pathLen = finalMsg.raw.path.split('/').length;
+                let storedPathLen = msg.response._meta.path.split('/').length;
+                expect(storedPathLen).to.equal(pathLen + 1);
 
-                    console.log('RESULT: ', outboundMsg);
-
-                    expect(outboundMsg.response.data).to.eql(expectedResponseData);
-
-                    // check that the path has been appended with a random id
-                    let pathLen = finalMsg.raw.path.split('/').length;
-                    let storedPathLen = outboundMsg.response._meta.path.split('/').length;
-                    expect(storedPathLen).to.equal(pathLen + 1);
-
-                    done();
-                }
+                return done();
             }
-        })
+        }
 
+        // add test messages to incoming fifo queue
         this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
         this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', finalMsg);
     });
 
     // TODO - look at the happn-3 process of handling tags (there is a LOT more to this!):
     // processStore -> upsert -> __upsertInternal -> insertTag
-    xit('successfully handles a SET message with TAG option', (done) => {
+    // xit('successfully handles a SET message with TAG option', (done) => {
 
-        // initial 
+    //     // initial 
 
-        let initialData = {
-            property1: 'property1',
-            property2: 'property2',
-            property3: 'property3'
-        };
+    //     let initialData = {
+    //         property1: 'property1',
+    //         property2: 'property2',
+    //         property3: 'property3'
+    //     };
 
-        let initialMsg = getBaseSetMsg(initialData);
+    //     let initialMsg = getBaseSetMsg(initialData);
 
-        // final
+    //     // final
 
-        let finalMsg = getBaseSetMsg(null, false, false, false, false, true);
+    //     let finalMsg = getBaseSetMsg(null, false, false, false, false, true);
 
-        console.log('FINAL MESSAGE: ', finalMsg)
+    //     console.log('FINAL MESSAGE: ', finalMsg)
 
-        let msgCount = 0;
+    //     let msgCount = 0;
 
-        this.__coreRabbitService.on('itemAdded', (eventObj) => {
+    //     this.__coreRabbitService.on('itemAdded', (eventObj) => {
 
-            if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
+    //         if (eventObj.queueName === 'HAPPN_WORKER_OUT') {
 
-                msgCount += 1;
+    //             msgCount += 1;
 
-                if (msgCount === 2) {
-                    let outboundMsg = eventObj.item;
+    //             if (msgCount === 2) {
+    //                 let outboundMsg = eventObj.item;
 
-                    console.log('RESULT: ', outboundMsg);
+    //                 console.log('RESULT: ', outboundMsg);
 
-                    // expect(outboundMsg.response.data).to.eql(expectedResponseData);
+    //                 // expect(outboundMsg.response.data).to.eql(expectedResponseData);
 
-                    done();
-                }
-            }
-        })
+    //                 done();
+    //             }
+    //         }
+    //     })
 
-        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
-        this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', finalMsg);
-    });
+    //     this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
+    //     this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', finalMsg);
+    // });
 
     it('successfully handles a SET message and publishes on the pubsub queue', (done) => {
 
@@ -295,17 +292,14 @@ describe('router-service-tests', function (done) {
 
         let initialMsg = getBaseSetMsg(initialData, false, true, false, false);
 
-        this.__coreRabbitService.on('itemAdded', (eventObj) => {
+        // handler for the outgoing fifo queue (once the router-service has finished processing)
+        this.__testContext = (channel, queueItem) => {
 
-            if (eventObj.queueName === 'HAPPN_PUBSUB_OUT') {
-
-                let outboundMsg = eventObj.item;
-
-                expect(outboundMsg.response.data).to.eql(initialData);
-
-                done();
-            }
-        })
+            channel.ack(queueItem);
+            let msg = JSON.parse(queueItem.content);
+            expect(msg.response.data).to.eql(initialData);
+            done();
+        }
 
         this.__rabbitFifoQueueService.add('HAPPN_WORKER_IN', initialMsg);
     });

@@ -1,8 +1,9 @@
 const expect = require('expect.js');
+const CoreRabbitService = require('../../lib/services/queues/core-rabbit-service');
 const RabbitQueueService = require('../../lib/services/queues/fifo/rabbit-queue-service');
 const AmqpClient = require('amqplib');
 
-describe('rabbit-queue-tests', async () => {
+describe('rabbit-fifo-queue-tests', async () => {
 
     before('setup', async () => {
 
@@ -22,8 +23,9 @@ describe('rabbit-queue-tests', async () => {
         }
 
         //config, logger, amqpClient
-        this.__queueService = RabbitQueueService.create(this.__config, this.__logger, AmqpClient);
-        await this.__queueService.initialize();
+        this.__coreRabbitService = CoreRabbitService.create(this.__config, this.__logger, AmqpClient);
+        this.__queueService = RabbitQueueService.create(this.__config, this.__logger, this.__coreRabbitService);
+        await this.__coreRabbitService.initialize();
 
         // this is changed in each test
         this.__testContext = (channel, msg) => { };
@@ -38,7 +40,7 @@ describe('rabbit-queue-tests', async () => {
     });
 
     after('stop', async () => {
-        await this.__queueService.stop();
+        await this.__coreRabbitService.stop();
     });
 
     it('successfully starts a queue', async () => {
