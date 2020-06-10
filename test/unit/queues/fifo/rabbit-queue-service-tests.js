@@ -25,15 +25,8 @@ describe('rabbit-fifo-queue-service-tests', function () {
 
     it('successfully starts a queue', () => {
 
-        const mockChannel = {
-            assertCount: 0,
-            prefetchCount: 0,
-            assertQueue: () => { mockChannel.assertCount += 1; },
-            prefetch: () => { mockChannel.prefetchCount += 1; }
-        };
-
         const mockCoreRabbitService = this.__mocker.mock(CoreRabbitService.prototype)
-            .withSyncStub('getChannel', mockChannel)
+            .withSyncStub('startQueue', null)
             .create();
 
         const config = { userName: 'test', password: 'test' };
@@ -42,19 +35,15 @@ describe('rabbit-fifo-queue-service-tests', function () {
         const queueService = QueueService.create(config, this.__logger, mockCoreRabbitService);
         queueService.startQueue('TEST_QUEUE');
 
-        expect(mockChannel.assertCount).to.equal(1);
-        expect(mockChannel.prefetchCount).to.equal(1);
+        expect(mockCoreRabbitService.recorder['startQueue'].calls).to.equal(1);
 
     });
 
     it('successfully sets a queue handler', () => {
 
-        const mockCoreRabbitService = {
-            setHandlerCount: 0,
-            setHandler: (queueName, handler) => {
-                mockCoreRabbitService.setHandlerCount += 1;
-            }
-        };
+        const mockCoreRabbitService = this.__mocker.mock(CoreRabbitService.prototype)
+            .withSyncStub('setHandler', null)
+            .create();
 
         const config = { userName: 'test', password: 'test' };
 
@@ -62,7 +51,7 @@ describe('rabbit-fifo-queue-service-tests', function () {
         const queueService = QueueService.create(config, this.__logger, mockCoreRabbitService);
         queueService.setHandler('TEST_QUEUE', (queueName, handler) => { });
 
-        expect(mockCoreRabbitService.setHandlerCount).to.equal(1);
+        expect(mockCoreRabbitService.recorder['setHandler'].calls).to.equal(1);
 
     });
 
@@ -93,7 +82,7 @@ describe('rabbit-fifo-queue-service-tests', function () {
         // system under test
         const queueService = QueueService.create(config, this.__logger, mockCoreRabbitService);
         queueService.add('TEST_QUEUE', '{"test":"message"}');
-        
+
         // expectations
         expect(mockChannel.sendToQueueCount).to.equal(1);
 

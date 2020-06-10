@@ -43,16 +43,6 @@ describe('rabbit-fifo-queue-tests', async () => {
         await this.__coreRabbitService.stop();
     });
 
-    it('successfully starts a queue', async () => {
-
-        try {
-            await this.__queueService.startQueue(this.__queueName);
-        } catch (err) {
-            console.log(err)
-            throw err;
-        }
-    });
-
     it('successfully adds and pops an item on a queue', (done) => {
 
         let testMessage = JSON.stringify({ name: 'Widget' });
