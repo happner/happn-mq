@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const Nedb = require('happn-nedb');
 const CoreRabbitService = require('../../lib/services/queues/core-rabbit-service');
 const RabbitFifoQueueService = require('../../lib/services/queues/fifo/rabbit-queue-service');
+const RabbitTopicQueueService = require('../../lib/services/queues/topic/rabbit-queue-service');
 // const MemoryQueueService = require('../../lib/services/queues/fifo/memory-queue-service');
 const RouterService = require('../../lib/services/router-service');
 const SecurityService = require('../../lib/services/security-service');
@@ -53,6 +54,7 @@ describe('router-service-tests', function (done) {
         // queue service
         this.__coreRabbitService = CoreRabbitService.create(this.__config, this.__logger, AmqpClient);
         this.__rabbitFifoQueueService = RabbitFifoQueueService.create(this.__config, this.__logger, this.__coreRabbitService);
+        this.__rabbitTopicQueueService = RabbitTopicQueueService.create(this.__config, this.__logger, this.__coreRabbitService);
         await this.__coreRabbitService.initialize();
 
         // security service
@@ -63,8 +65,9 @@ describe('router-service-tests', function (done) {
         let nedbRepository = NedbRepository.create(nedb);
         this.__dataService = NedbDataService.create(this.__config, this.__logger, nedbRepository, this.__utils, upsertBuilder);
 
-        // actions
-        let setAction = new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__rabbitFifoQueueService, this.__dataService, this.__utils);
+        // action
+        //config, logger, fifoQueueService, topicQueueService, dataService, utils
+        let setAction = new (require(`../../lib/services/actions/set`))(this.__config, this.__logger, this.__rabbitFifoQueueService, this.__rabbitTopicQueueService, this.__dataService, this.__utils);
         this.__actions = { setAction };
 
         // action factory

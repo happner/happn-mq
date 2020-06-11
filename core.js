@@ -21,25 +21,27 @@ module.exports = class Core {
     constructor(config) {
 
         // defaults if the config is null
-        this.__config = config ? config : {
-            trace: true,
-            queues: [
-                { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
-                { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
-                { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
-                { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
-            ],
-            queueProvider: 'rabbitmq',  // to be interchangeable with other implementations, eg: rabbitmq, memory
-            data: {
-                provider: 'nedb',
-                filename: 'happn-MQ',
-                autoload: true,
-                timestampData: true
-            },
-            host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
-            userName: process.env['RABBITMQ_USERNAME'],
-            password: process.env['RABBITMQ_PASSWORD']
-        };
+        // this.__config = config ? config : {
+        //     trace: true,
+        //     queues: [
+        //         // { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
+        //         { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
+        //         { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
+        //         { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
+        //     ],
+        //     queueProvider: 'rabbitmq',  // to be interchangeable with other implementations, eg: rabbitmq, memory
+        //     data: {
+        //         provider: 'nedb',
+        //         filename: 'happn-MQ',
+        //         autoload: true,
+        //         timestampData: true
+        //     },
+        //     host: process.env['RABBITMQ_HOST'] || '0.0.0.0',
+        //     userName: process.env['RABBITMQ_USERNAME'],
+        //     password: process.env['RABBITMQ_PASSWORD']
+        // };
+
+        this.__config = config;
 
         console.log('HAPPN-MQ CONFIG: ', this.__config);
 
@@ -74,7 +76,8 @@ module.exports = class Core {
         let offAction = new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
         let onAction = new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
         let removeAction = new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
-        let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__fifoQueueService, this.__dataService, this.__utils);
+        // let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__fifoQueueService, this.__dataService, this.__utils);
+        let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__fifoQueueService, this.__topicQueueService, this.__dataService, this.__utils);
 
         this.__actions = {
             describeAction, loginAction, getAction, offAction, onAction, removeAction, setAction
@@ -96,10 +99,17 @@ module.exports = class Core {
         // set up the queue service
         await this.__coreRabbitService.initialize();
 
-        // start the queues
-        for (let queue of this.__config.queues) {
-            this.__fifoQueueService.startQueue(queue.name);
-        }
+        // for (let queue of this.__config.queues) {
+        //     this.__fifoQueueService.startQueue(queue.name);
+        // }
+
+        // start the inbound and outbound fifo queues
+        this.__fifoQueueService.startQueue('HAPPN_WORKER_IN');
+        this.__fifoQueueService.startQueue('HAPPN_WORKER_OUT');
+
+        // set up the main outbound topic queue
+        this.__topicQueueService.startExchange('HAPPN-MQ-CORE');
+        this.__topicQueueService.startQueue('HAPPN_PUBSUB_OUT');
 
         // set up the router service
         await this.__routerService.start();
@@ -127,10 +137,14 @@ module.exports = class Core {
     }
 
     // set by happn-3 so that the session service can respond to the client
-    async setOutboundPubsubQueueHandler(handler) {
-        // console.log('Binding handler to outbound pubsub queue.....');
-        let queueName = this.__findQueueNameByType('pubsub_out');
-        await this.__fifoQueueService.setHandler(queueName, handler);
+    // async setOutboundPubsubQueueHandler(handler) {
+    //     // console.log('Binding handler to outbound pubsub queue.....');
+    //     let queueName = this.__findQueueNameByType('pubsub_out');
+    //     await this.__fifoQueueService.setHandler(queueName, handler);
+    // }
+    
+    async subscribe(key, handler) {
+        await this.__topicQueueService.subscribe('HAPPN-MQ-CORE', 'HAPPN_PUBSUB_OUT', key, handler);
     }
 
     __findQueueNameByType(type) {

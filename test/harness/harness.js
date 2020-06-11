@@ -54,7 +54,7 @@ module.exports = class Happn3Harness {
                     // },
                     data: {
                         config: {
-                            filename: 'happn-mq-TEST-APP',
+                            filename: 'happn-MQ',
                             autoload: true,
                             timestampData: true
                         }
@@ -65,8 +65,8 @@ module.exports = class Happn3Harness {
             let happnMqConfig = {
                 trace: true,
                 queues: [
-                    { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
-                    { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
+                    // { name: 'HAPPN_PUBSUB_IN', type: 'pubsub_in' },
+                    // { name: 'HAPPN_PUBSUB_OUT', type: 'pubsub_out' },
                     { name: 'HAPPN_WORKER_IN', type: 'worker_in' },
                     { name: 'HAPPN_WORKER_OUT', type: 'worker_out' }
                 ],
@@ -95,7 +95,12 @@ module.exports = class Happn3Harness {
                     // set up happn-mq
                     self.__happnMq = HappnMq.create(happnMqConfig);
                     await self.__happnMq.initialize();
+                    
                     await self.__happnMq.setOutboundWorkerQueueHandler(self.queueItemHandler.bind(self));
+
+                    await self.__happnMq.subscribe('#', (channel, message) => {
+                        console.log('PUBSUB MESSAGE RECEIVED!: ', message.content.toString());
+                    })
 
                     console.log('HAPPN-MQ INITIALIZED...');
 
