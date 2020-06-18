@@ -58,8 +58,6 @@ describe('rabbit-topic-queue-tests', function (done) {
             let testMsg = '{"test":"item"}';
             let count = 0;
 
-            this.__topicQueueService.startQueue(testQueue);
-
             let handler = (channel, msg) => {
 
                 count += 1;
@@ -70,11 +68,14 @@ describe('rabbit-topic-queue-tests', function (done) {
                     resolve();
             };
 
-            this.__topicQueueService.subscribe(this.__exchangeName, testQueue, key, handler)
+            this.__topicQueueService
+                .startQueue(testQueue)
+                .subscribe(this.__exchangeName, testQueue, key, handler)
                 .then(() => {
-                    this.__topicQueueService.publish(this.__exchangeName, 'YABBA', testMsg);    // no 
-                    this.__topicQueueService.publish(this.__exchangeName, 'YABBA.DABBA', testMsg);  // yes
-                    this.__topicQueueService.publish(this.__exchangeName, 'YABBA.DABBA.DOO', testMsg);  // no
+                    this.__topicQueueService
+                        .publish(this.__exchangeName, 'YABBA', testMsg)    // no 
+                        .publish(this.__exchangeName, 'YABBA.DABBA', testMsg)  // yes
+                        .publish(this.__exchangeName, 'YABBA.DABBA.DOO', testMsg);  // no
                 })
         })
 
@@ -89,8 +90,6 @@ describe('rabbit-topic-queue-tests', function (done) {
             let testMsg = '{"test2":"item2"}';
             let count = 0;
 
-            this.__topicQueueService.startQueue(testQueue);
-
             let handler = (channel, msg) => {
 
                 count += 1;
@@ -101,15 +100,17 @@ describe('rabbit-topic-queue-tests', function (done) {
                     resolve();
             };
 
-            this.__topicQueueService.subscribe(this.__exchangeName, testQueue, key, handler)
+            this.__topicQueueService
+                .startQueue(testQueue)
+                .subscribe(this.__exchangeName, testQueue, key, handler)
                 .then(() => {
-                    this.__topicQueueService.publish(this.__exchangeName, '123.', testMsg); // yes - 2 words; second word is empty string
-                    this.__topicQueueService.publish(this.__exchangeName, '123.DABBA', testMsg);    // yes - 2 words
-                    this.__topicQueueService.publish(this.__exchangeName, '321.DABBA', testMsg);    // no - 1st word isn't a match
+                    this.__topicQueueService
+                        .publish(this.__exchangeName, '123.', testMsg) // yes - 2 words; second word is empty string
+                        .publish(this.__exchangeName, '123.DABBA', testMsg)    // yes - 2 words
+                        .publish(this.__exchangeName, '321.DABBA', testMsg);    // no - 1st word isn't a match
+
                 })
-
         });
-
     });
 
     it('topic subscriber successfully receives 3 2-word messages out of 3 published', () => {
@@ -121,8 +122,6 @@ describe('rabbit-topic-queue-tests', function (done) {
             let testMsg = '{"test3":"item3"}';
             let count = 0;
 
-            this.__topicQueueService.startQueue(testQueue);
-
             let handler = (channel, msg) => {
 
                 count += 1;
@@ -133,15 +132,16 @@ describe('rabbit-topic-queue-tests', function (done) {
                     resolve();
             };
 
-            this.__topicQueueService.subscribe(this.__exchangeName, testQueue, key, handler)
+            this.__topicQueueService
+                .startQueue(testQueue)
+                .subscribe(this.__exchangeName, testQueue, key, handler)
                 .then(() => {
-                    this.__topicQueueService.publish(this.__exchangeName, '999.', testMsg); // yes - 2 words; second word is empty string
-                    this.__topicQueueService.publish(this.__exchangeName, '999.DABBA', testMsg);    // yes - 2 words
-                    this.__topicQueueService.publish(this.__exchangeName, '999.DABBA.DOO', testMsg);    // no - 3 words
+                    this.__topicQueueService
+                        .publish(this.__exchangeName, '999.', testMsg) // yes - 2 words; second word is empty string
+                        .publish(this.__exchangeName, '999.DABBA', testMsg)    // yes - 2 words
+                        .publish(this.__exchangeName, '999.DABBA.DOO', testMsg);    // no - 3 words
                 })
-
         });
-
     });
 
     it('topic subscriber successfully receives 3 2-word messages out of 3 published', () => {
@@ -153,8 +153,6 @@ describe('rabbit-topic-queue-tests', function (done) {
             let testMsg = '{"test3":"item3"}';
             let count = 0;
 
-            this.__topicQueueService.startQueue(testQueue);
-
             let handler = (channel, msg) => {
 
                 count += 1;
@@ -165,12 +163,87 @@ describe('rabbit-topic-queue-tests', function (done) {
                     resolve();
             };
 
-            this.__topicQueueService.subscribe(this.__exchangeName, testQueue, key, handler)
+            this.__topicQueueService
+                .startQueue(testQueue)
+                .subscribe(this.__exchangeName, testQueue, key, handler)
                 .then(() => {
-                    this.__topicQueueService.publish(this.__exchangeName, '999.', testMsg); // yes - 2 words; second word is empty string
-                    this.__topicQueueService.publish(this.__exchangeName, '999.DABBA', testMsg);    // yes - 2 words
-                    this.__topicQueueService.publish(this.__exchangeName, '999.DABBA.DOO.ANY.NUMBER.OF.WORDS', testMsg);    // no - 3 words
+                    this.__topicQueueService
+                        .publish(this.__exchangeName, '999.', testMsg) // yes - 2 words; second word is empty string
+                        .publish(this.__exchangeName, '999.DABBA', testMsg)    // yes - 2 words
+                        .publish(this.__exchangeName, '999.DABBA.DOO.ANY.NUMBER.OF.WORDS', testMsg);    // no - 3 words
                 })
         });
     });
-})
+
+    /*
+    GOAL: 
+    - To determine if a topic queue 
+    */
+    xit('succesfully delivers message ONCE via round robin', () => {
+
+        return new Promise((resolve, reject) => {
+
+            let testQueue = 'TOPIC_QUEUE_5';
+            let key = '999.*.*'; // any number of words; the first word must match
+            let testMsg1 = '{"test1":"item1"}';
+            let testMsg2 = '{"test2":"item2"}';
+            let testMsg3 = '{"test3":"item3"}';
+
+            let count1 = 0;
+            let count2 = 0;
+            let count3 = 0;
+
+            let handler1 = (channel, msg) => {
+
+                console.log('MESSAGE RECEIVED ON HANDLER 1: ', msg.content.toString());
+
+                count1 += 1;
+
+                // expect(msg.content.toString()).to.equal(testMsg);
+
+                // if (count === 3)
+                //     resolve();
+            };
+
+            let handler2 = (channel, msg) => {
+
+                console.log('MESSAGE RECEIVED ON HANDLER 2: ', msg.content.toString());
+
+                count2 += 1;
+
+                // expect(msg.content.toString()).to.equal(testMsg);
+
+                // if (count === 3)
+                //     resolve();
+            };
+
+            let handler3 = (channel, msg) => {
+
+                console.log('MESSAGE RECEIVED ON HANDLER 3: ', msg.content.toString());
+
+                count3 += 1;
+
+                // expect(msg.content.toString()).to.equal(testMsg);
+
+                // if (count === 3)
+                //     resolve();
+            };
+
+            this.__topicQueueService.startQueue(testQueue)
+                .subscribe(this.__exchangeName, testQueue, key, handler1)
+                .then(() => {
+                    this.__topicQueueService.subscribe(this.__exchangeName, testQueue, key, handler2)
+                        .then(() => {
+                            this.__topicQueueService.subscribe(this.__exchangeName, testQueue, key, handler3)
+                                .then(() => {
+                                    this.__topicQueueService.publish(this.__exchangeName, '999.9', testMsg1);
+                                    this.__topicQueueService.publish(this.__exchangeName, '999.7', testMsg3);
+                                    this.__topicQueueService.publish(this.__exchangeName, '999.8.test', testMsg2);
+
+                                })
+                        })
+
+                })
+        })
+    });
+});

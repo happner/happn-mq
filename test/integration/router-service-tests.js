@@ -90,7 +90,7 @@ describe('router-service-tests', function (done) {
             this.__testContext(channel, msg);
         };
 
-        this.__rabbitFifoQueueService.setHandler('HAPPN_WORKER_OUT', handler);
+        await this.__rabbitFifoQueueService.setHandler('HAPPN_WORKER_OUT', handler);
     });
 
     // comment this out if you want to see the test DB file
