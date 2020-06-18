@@ -66,18 +66,8 @@ describe('rabbit-topic-queue-service-tests', function () {
 
     it('successfully subscribes to a queue', async () => {
 
-        const mockChannel = {
-            bindQueueCount: 0,
-            bindQueue: async () => { mockChannel.bindQueueCount += 1; }
-        };
-
         const mockCoreRabbitService = {
-            getChannelCount: 0,
             setHandlerCount: 0,
-            getChannel: () => {
-                mockCoreRabbitService.getChannelCount += 1;
-                return mockChannel;
-            },
             setHandler: () => {
                 mockCoreRabbitService.setHandlerCount += 1;
             }
@@ -90,10 +80,7 @@ describe('rabbit-topic-queue-service-tests', function () {
 
         await queueService.subscribe('TEST_EXCHANGE', 'TEST_QUEUE', '*', '{"test":"item"}');
 
-        expect(mockCoreRabbitService.getChannelCount).to.equal(1);
         expect(mockCoreRabbitService.setHandlerCount).to.equal(1);
-        expect(mockChannel.bindQueueCount).to.equal(1);
-
     });
 
     it('successfully publishes to a queue', async () => {
