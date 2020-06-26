@@ -1,11 +1,11 @@
 const expect = require('expect.js');
 const Mocker = require('mini-mock');
 
-const QueueService = require('../../lib/services/queues/fifo/rabbit-queue-service');
-const RouterService = require('../../lib/services/router-service');
-const SecurityService = require('../../lib/services/security-service');
-const ActionService = require('../../lib/services/actions/base-action');
-const ActionServiceFactory = require('../../lib/factories/action-service-factory');
+const QueueService = require('../../../lib/services/common/queues/fifo/rabbit-queue-service');
+const RouterService = require('../../../lib/services/core/router-service');
+const SecurityService = require('../../../lib/services/core/security-service');
+const ActionService = require('../../../lib/services/core/actions/base-action');
+const ActionServiceFactory = require('../../../lib/factories/action-service-factory');
 
 describe('router-service-tests', async () => {
 

@@ -1,6 +1,6 @@
 const expect = require('expect.js');
-const CoreRabbitService = require('../../lib/services/queues/core-rabbit-service');
-const TopicQueueService = require('../../lib/services/queues/topic/rabbit-queue-service');
+const CoreRabbitService = require('../../lib/services/common/queues/core-rabbit-service');
+const TopicQueueService = require('../../lib/services/common/queues/topic/rabbit-queue-service');
 const AmqpClient = require('amqplib');
 const { exec } = require('child_process');
 
@@ -193,7 +193,8 @@ describe('rabbit-topic-queue-tests', function (done) {
         });
     });
 
-    it('succesfully delivers message ONCE via round robin', () => {
+    // one queue; 3 handlers; 3 messages: each message should be handled by ONE handler only
+    it.only('message successfully handled in round robin sequence', () => {
 
         return new Promise((resolve, reject) => {
 
@@ -224,6 +225,8 @@ describe('rabbit-topic-queue-tests', function (done) {
 
                 count1 += 1;
                 checkCount();
+                
+                // channel.ack(msg);
             };
 
             let handler2 = (channel, msg) => {
@@ -232,6 +235,8 @@ describe('rabbit-topic-queue-tests', function (done) {
 
                 count2 += 1;
                 checkCount();
+
+                channel.ack(msg);
             };
 
             let handler3 = (channel, msg) => {
@@ -240,9 +245,12 @@ describe('rabbit-topic-queue-tests', function (done) {
 
                 count3 += 1;
                 checkCount();
+
+                channel.ack(msg);
             };
 
-            this.__topicQueueService.startQueue(testQueue)
+            this.__topicQueueService
+                .startQueue(testQueue)
                 .startExchange(testExchange)
                 .bindQueueToExchange(testQueue, testExchange, key)
                 .subscribe(testQueue, handler1)

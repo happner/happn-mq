@@ -98,7 +98,7 @@ module.exports = class Happn3Harness {
                     
                     await self.__happnMq.setOutboundWorkerQueueHandler(self.queueItemHandler.bind(self));
 
-                    await self.__happnMq.subscribe('#', (channel, message) => {
+                    await self.__happnMq.subscribe((channel, message) => {
                         console.log('PUBSUB MESSAGE RECEIVED!: ', message.content.toString());
                     })
 

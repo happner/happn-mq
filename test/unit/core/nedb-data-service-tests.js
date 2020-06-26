@@ -1,6 +1,6 @@
 const expect = require('expect.js');
 
-const DataService = require('../../lib/services/data/nedb-data-service');
+const DataService = require('../../../lib/services/core/data/nedb-data-service');
 
 describe('nedb-data-service-tests', function () {
 

@@ -1,13 +1,12 @@
 const expect = require('expect.js');
 const Mocker = require('mini-mock');
 
-const ActionServiceFactory = require('../../lib/factories/action-service-factory');
-const DescribeAction = require('../../lib/services/actions/describe');
+const ActionServiceFactory = require('../../../lib/factories/action-service-factory');
+const DescribeAction = require('../../../lib/services/core/actions/describe');
 
 describe('action-service-factory-tests', async () => {
 
     before('setup', async () => {
-
         this.__mocker = new Mocker();
         this.__config = {};
         this.__logger = {

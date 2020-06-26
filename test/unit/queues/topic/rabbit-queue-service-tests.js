@@ -1,6 +1,6 @@
 const expect = require('expect.js');
 
-const QueueService = require('../../../../lib/services/queues/topic/rabbit-queue-service');
+const QueueService = require('../../../../lib/services/common/queues/topic/rabbit-queue-service');
 
 describe('rabbit-topic-queue-service-tests', function () {
 
@@ -78,7 +78,7 @@ describe('rabbit-topic-queue-service-tests', function () {
         // system under test
         const queueService = QueueService.create(config, this.__logger, mockCoreRabbitService);
 
-        await queueService.subscribe('TEST_EXCHANGE', 'TEST_QUEUE', '*', '{"test":"item"}');
+        await queueService.subscribe('TEST_QUEUE', () => { });
 
         expect(mockCoreRabbitService.setHandlerCount).to.equal(1);
     });
@@ -109,8 +109,6 @@ describe('rabbit-topic-queue-service-tests', function () {
         expect(mockChannel.publishCount).to.equal(1);
 
     });
-
-
 
 })
 

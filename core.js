@@ -3,13 +3,13 @@ const Xpozr = require('xpozr');
 const Nedb = require('happn-nedb');
 const AmqpClient = require('amqplib');
 const Utils = require('./lib/utils/utils');
-const CoreRabbitService = require('./lib/services/queues/core-rabbit-service');
+const CoreRabbitService = require('./lib/services/common/queues/core-rabbit-service');
 const QueueServiceFactory = require('./lib/factories/queue-service-factory');
-const SecurityService = require('./lib/services/security-service');
+const SecurityService = require('./lib/services/core/security-service');
 const DataServiceFactory = require('./lib/factories/data-service-factory');
-const DataService = require('./lib/services/data/nedb-data-service');
+const DataService = require('./lib/services/core/data/nedb-data-service');
 const NedbRepository = require('./lib/repositories/nedb-repository');
-const RouterService = require('./lib/services/router-service');
+const RouterService = require('./lib/services/core/router-service');
 const ActionServiceFactory = require('./lib/factories/action-service-factory');
 const setResultBuilder = require('./lib/builders/set-result-builder');
 const upsertBuilder = require('./lib/builders/upsert-builder');
@@ -70,14 +70,14 @@ module.exports = class Core {
         this.__securityService = SecurityService.create(this.__config, this.__logger);
 
         // actions
-        let describeAction = new (require('./lib/services/actions/describe'))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
-        let loginAction = new (require(`./lib/services/actions/login`))(this.__config, this.__logger, this.__fifoQueueService, this.__securityService, this.__utils);
-        let getAction = new (require(`./lib/services/actions/get`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
-        let offAction = new (require(`./lib/services/actions/off`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
-        let onAction = new (require(`./lib/services/actions/on`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
-        let removeAction = new (require(`./lib/services/actions/remove`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let describeAction = new (require('./lib/services/core/actions/describe'))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let loginAction = new (require(`./lib/services/core/actions/login`))(this.__config, this.__logger, this.__fifoQueueService, this.__securityService, this.__utils);
+        let getAction = new (require(`./lib/services/core/actions/get`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let offAction = new (require(`./lib/services/core/actions/off`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let onAction = new (require(`./lib/services/core/actions/on`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
+        let removeAction = new (require(`./lib/services/core/actions/remove`))(this.__config, this.__logger, this.__fifoQueueService, this.__utils);
         // let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__fifoQueueService, this.__dataService, this.__utils);
-        let setAction = new (require(`./lib/services/actions/set`))(this.__config, this.__logger, this.__fifoQueueService, this.__topicQueueService, this.__dataService, this.__utils);
+        let setAction = new (require(`./lib/services/core/actions/set`))(this.__config, this.__logger, this.__fifoQueueService, this.__topicQueueService, this.__dataService, this.__utils, setResultBuilder);
 
         this.__actions = {
             describeAction, loginAction, getAction, offAction, onAction, removeAction, setAction
@@ -143,8 +143,8 @@ module.exports = class Core {
     //     await this.__fifoQueueService.setHandler(queueName, handler);
     // }
     
-    async subscribe(key, handler) {
-        await this.__topicQueueService.subscribe('HAPPN-MQ-CORE', 'HAPPN_PUBSUB_OUT', key, handler);
+    async subscribe(handler) {
+        await this.__topicQueueService.subscribe('HAPPN_PUBSUB_OUT', handler);
     }
 
     __findQueueNameByType(type) {
