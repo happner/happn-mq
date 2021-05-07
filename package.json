@@ -24,7 +24,7 @@
     "happn-nedb": "^1.9.0",
     "happner-hyperid": "^2.0.0",
     "shortid": "^2.2.15",
-    "underscore": "^1.10.2",
+    "underscore": "^1.12.1",
     "xpozr": "0.0.1"
   },
   "devDependencies": {
